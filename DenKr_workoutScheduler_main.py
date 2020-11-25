@@ -431,10 +431,10 @@ class workout(object):
                 if len(self.muscle_groups[j].history_shortened)>=lenTotalMax:
                     if self.muscle_groups[j].history_shortened[lenTotalMax-i]==1:
                         print(self.muscle_groups[j].name)
+            print("")
             i-=1
             
-            
-        print("\n#########################################")
+        print("#########################################")
         print("#########################################")
         print("#########################################\n")
         pass
@@ -990,6 +990,14 @@ def main_variant1():
     #TODO: Teste die Sinnhaftigkeit des konkreten Wertes by self.bigMuscle_precedence_tolerance
     err=0  # @UnusedVariable
     #print("Call it with Python 3.7 or higher! This requires order-preserving dictionaries.")
+    print("DenKr_workoutScheduler (v. beta 0.1)")
+    print(" (Path of Script: %s) [Here, the History is stored]"%(progPath))
+    print("")
+    print("It calculates a progressing schedule for your resistance-training workout, i.e. tells you in which order you may train your muscle-groups.")
+    print("In the defined class \"workout\" you may define your demands. That is, how many workouts you intend to do per week and how often per week individual muscles shall be attacked. The default should provide a solid setup for most people up to advanced. However, if you are very advanced you may need to adjust the volume and for sure your total workouts per week.")
+    print("The tool stores the calculated schedule as a history in text-files and loads them during a run, to maintain a consistant suitable flow. After startup you are first told (again) the last loaded workouts, then the new ones are presented on the terminal.")
+    print("Before writing the history (i.e. appending the newly computed workouts), you are prompted a query on the console whether the persistent history files shall be updated or not. You can use this to just lookup the last preceding computation without creating a new one and unintentionally messing with the history files.")
+    print("\n--------------------------------\n")
     print("This Workout-Scheduler has as baseline the assumption, that you work-out every second day (i.e. 3.5 times a week) and are with that able to attack the big muscles twice a week, the smalls once and abs & calves sahre a thrice in weeks.")
     print("This scales very well if you adjust the total-workouts-per-week value and the workouts_perMuscle_perWeek to for instance attack them more fequently or with a higher volume in case you are more advanced.")
     print("You might want to use a workaround if you intend to work-out below the recommended baseline volume:")
@@ -1053,7 +1061,7 @@ def signal_handler__Ctrl_c(sig, frame):
     
 def main(argc,argv):
     SET_ansi_escape_use()
-    printansi(ansi_blue,"""I can even use colors!\n""")
+    #printansi(ansi_blue,"""I can even use colors!\n""")
     # - - - - - - - - -
     err=main_variant1()
     #err=main_variant2()
@@ -1062,8 +1070,8 @@ def main(argc,argv):
     
 if __name__ == '__main__':
     signal.signal(signal.SIGINT,signal_handler__Ctrl_c)
-    print('Number of arguments:',len(argv),'arguments.')
-    print('Argument List:',str(argv))
+    #print('Number of arguments:',len(argv),'arguments.')
+    #print('Argument List:',str(argv))
     argc = len(sys.argv)-1
     argv=sys.argv[1:]
     # - - - - - - - - -
@@ -1078,6 +1086,6 @@ if __name__ == '__main__':
     #print('realpath = ', progPath) 
     progPath = os.path.realpath(__file__)
     progPath = os.path.dirname(progPath)
-    print('Path of Script: ', progPath)
+    #print('Path of Script: ', progPath)
     # - - - - - - - - -
     main(argc,argv)
