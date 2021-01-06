@@ -336,7 +336,7 @@ class workout(object):
         self._add_muscle("delt_back",2,1,5)
         self._add_muscle("rotator_cuff",2,1.25,6)
         self._add_muscle("delt_side",2,1,5)
-        self._add_muscle("quads & glutes",1,1.75,10)
+        self._add_muscle("quads & glutes",1,1.5,10)#1.75 per Week
         #self._add_muscle("quads",1,1.75,10)#self._add_muscle("quads",1,2,10)
         #self._add_muscle("glutes",1,1.75,10)#self._add_muscle("glutes",1,2,10)
         self._add_muscle("bizeps",2,1,5)
@@ -438,19 +438,33 @@ class workout(object):
         print("#########################################")
         print("#########################################\n")
         pass
-    def history_show_computedWorkoutSchedule(self):
-        i=0
+    def history_show_computedWorkoutSchedule(self,upcomingOutput_Reverse):
         print("######################")
         print("# Computed Schedule: #")
-        while i<len(self.muscle_groups[0].schedule):
-            print("===============")
-            print("== Workout %d"%(i+1))
-            print("---------------")
-            for j in range(0,len(self.muscle_groups),1):
-                if self.muscle_groups[j].schedule[i]==1:
-                    print(self.muscle_groups[j].name)
-            print("\n")
-            i+=1
+        if upcomingOutput_Reverse==0:
+            i=0
+            while i<len(self.muscle_groups[0].schedule):
+                print("===============")
+                print("== Workout %d"%(i+1))
+                print("---------------")
+                for j in range(0,len(self.muscle_groups),1):
+                    if self.muscle_groups[j].schedule[i]==1:
+                        print(self.muscle_groups[j].name)
+                print("\n")
+                i+=1
+        elif upcomingOutput_Reverse==1:
+            i=len(self.muscle_groups[0].schedule)-1
+            while i>=0:
+                print("===============")
+                print("== Workout %d"%(i+1))
+                print("---------------")
+                for j in range(0,len(self.muscle_groups),1):
+                    if self.muscle_groups[j].schedule[i]==1:
+                        print(self.muscle_groups[j].name)
+                print("\n")
+                i-=1
+        else:
+            print("Invalid Value given for \"upcomingOutput_Reverse\"")
     #------------------------------------------------------------------------------------------
     def muscles_analyse_history(self):
         [i.derive_credit_fromHistory(self.credit_center) for i in self.muscle_groups]
@@ -935,12 +949,12 @@ class workout(object):
         for i in range(1, self.num_workout_toCompute+1, 1):
             self.compute_workoutSchedule_nextWorkout(i)
     #------------------------------------------------------------------------------------------
-    def workoutScheduling_main(self):
+    def workoutScheduling_main(self,upcomingOutput_Reverse):
         self.set()
         self.history_read()
         self.history_show_previousWorkoutSchedule()
         self.compute_workoutSchedule()
-        self.history_show_computedWorkoutSchedule()
+        self.history_show_computedWorkoutSchedule(upcomingOutput_Reverse)
         
         self.push_schedule_toHistory()
         
@@ -973,9 +987,9 @@ def DenKr_workoutScheduler_Main():
     #A muscle shall have a "credit" higher than 2. It looses its malus every workout it is not trained and gains +1 for every time it is trained
     
     #TODO Extension: One could check (inside smoothening or urgencyAdjust or assureRest or at general picking) for severe overtraining. See whether an included muscles credit would land double the bonus over the centerCredit. But this case shouldn't really arise in the current approach (by the numMusclePerWorkout calculation and the restricted history analysis)
-    
+    upcomingOutput_Reverse=1
     work=workout()
-    work.workoutScheduling_main()
+    work.workoutScheduling_main(upcomingOutput_Reverse)
     
     return 0
 
@@ -988,6 +1002,10 @@ def main_variant1():
     #ToDo: User input query whether the history shall be updated or not
     #ToDo: Display the previous 6 workouts (read from history), then calculate the upcoming 6 and display them, then the query about updating history
     #TODO: Teste die Sinnhaftigkeit des konkreten Wertes by self.bigMuscle_precedence_tolerance
+    #ToDo: Eventuell "Facepull" als "eigenen Muskel" ergänzen, damit er häufig eingeplant wird. Dieser dann eventuell "on top"? Also bei solchen Workouts eine Übung mehr?
+    #    -> Think about a thorough 'explicit' integration of YTWL
+    #ToDo: For smoothening, a more sophisticated consideration of "related small & big muscle groups". That is, not combining small muscles together with big muscles, where compound-movements for the big muscle also attacks the small muscle. E.g. don't combine the front-delt in one workout with the chest
+    #Optional, eher nicht: Add Scale_Up & Scale_Down again. Mag Sinn ergeben, um die Credits besser auszuglätten. Vielleicht aufeinander bezogen -> Wenn einmal up-scaled wurde den threshold verringern, welcher die kommenden Workouts down_scaled. Damit mag sich ergeben, dass ein workout mal ein (oder zwei) Muskeln mehr trainiert, wenn sie dringend anliegen und man dann ein kommendes Workout etwas kürzer gestalten kann. (Kann einerseits sinnvoll sein, um solche Muskelgruppen nicht zu lange zu pausieren und dann zu schnell aufeinander zwei Mal trainiert. Ist aber andererseits auch wieder dämlich, weil dann einzelne Workouts zu lang werden, was schlecht für das Testo-Level ist...)
     err=0  # @UnusedVariable
     #print("Call it with Python 3.7 or higher! This requires order-preserving dictionaries.")
     print("DenKr_workoutScheduler (v. beta 0.1)")
@@ -1006,6 +1024,10 @@ def main_variant1():
     print("That is, of course, pretty much valid for all muscle groups. You are to fiddle around a little with the schedule recommendation of this tool.")
     print("Another tipp: In times, when you are proposed a smaller workout - only 3 muscles or so - you may want to fill the hole with something beneficial instead of just stopping the workout early. Fill in an additional session of facepulls for example. Do some external rotation exercise. Hit some back shoulder / back muscles, which could use some additional training. Do some isolated lower-back movement, like bend down to hyper-extension. There's always something to do.")
     print("")
+    print("Reverse Output:")
+    print("Watch out for the Variable 'upcomingOutput_Reverse' inside the function 'DenKr_workoutScheduler_Main()'.")
+    print("Set this to '0' to print out the computed Workout-Schedule with rising number (Starting with Workout-1, going up to Workout-n).")
+    print("Set it to '1' to print the Schedule 'reverse', i.e. with falling number (Starting with Workout-n, going down to Workout-1).")
     err=DenKr_workoutScheduler_Main()
     return err
 #------------------------------------------------------------------------------------------
