@@ -118,6 +118,7 @@ class muscle(object):
         self.malus=0.0#A "perWorkout" for this muscle. Also used as "Malus" for not training it
         self.bonus=0.0
         self.credit=0.0#used to determine the urgency of training this muscle
+        self.urgency=0.0#A more thorough, elaborate and sophisticated value to determine to actual urgency. The credit goes into its calculation
         self.history = []
         self.history_shortened = []
         #self.urgency=-1
@@ -238,6 +239,29 @@ class muscle(object):
                     print("Malformed History while Credit calculation. Exiting...")
                     exit()
                 i-=1
+    #------------------------------------------------------------------------------------------
+    def derive_urgency(self,credit_center,wo_perWeek_total):
+        #To make it a little more sophisticated: Derive a value which influences the urgency based on a ratio of workout-free days in relation to workouts-to-do (-> Long free period for a muscle -> high urgency. -> Many workouts with short pause-periods -> lowers urgency. -> Pretty much in schedule and even distribution -> low to none influence)
+        #  - To account for that, I analyse the last resting period
+        rest_period=0
+        joined_history=self.history_shortened+self.schedule
+        hist_len=len(joined_history)
+        if hist_len>0:
+            i=hist_len-1
+            while i>=0:
+                if joined_history[i]==0:
+                    rest_period+=1
+                elif joined_history[i]==1:
+                    break
+                else:
+                    print("Malformed History while Credit calculation. Exiting...")
+                    exit()
+                i-=1
+        rest_supposed=(wo_perWeek_total-self.wo_pW)/self.wo_pW
+        rest_ratio=rest_period/rest_supposed
+        #
+        #ToDo: As factor for the rest_ratio, another value might be better suited
+        self.urgency=(credit_center-self.credit)/self.bonus+0.5*rest_ratio
 #-----------------------------------------------------
         
 #-----------------------------------------------------
@@ -271,6 +295,8 @@ class workout(object):
         #self.delts_front=muscle()#Side-Delts (Seitlicher (oberer) Schulter-Muskel)
         #self.trapez=muscle()#Trapezius
         self.credit_center=4
+        # - - - - - - - - - -
+        self.muscle_workingSet=[]
     #------------------------------------------------------------------------------------------
     def __del__(self):
         workout.instance_counter -= 1
@@ -292,7 +318,8 @@ class workout(object):
         self.num_workout_toCompute=int(self.workouts_perWeek*2)#6
         self.group_by_superset=1
     def set_phase2(self):
-        self.bigMuscle_precedence_tolerance=self.muscle_groups[0].malus*0.45
+        #self.bigMuscle_precedence_tolerance=self.muscle_groups[0].malus*0.45
+        self.bigMuscle_precedence_tolerance=0#Hem, I say, we calc this dynamically for every run on the position, where it is used
         muscles_perWeek_total=0.0
         i=0
         while i<len(self.muscle_groups):
@@ -354,7 +381,6 @@ class workout(object):
         self.set_basics()
         self.set_muscles()
         self.set_phase2()
-        self.bigMuscle_precedence_tolerance=self.muscle_groups[0].malus
     #------------------------------------------------------------------------------------------
     def history_read(self):
         [i.history_read_file() for i in self.muscle_groups]
@@ -393,13 +419,31 @@ class workout(object):
         [i.history_push_schedule() for i in self.muscle_groups]
         [i.history_prepare_shortened(self.workouts_perWeek) for i in self.muscle_groups]
     #------------------------------------------------------------------------------------------
-    def debug_print_muscles(self,list,indiv_muscle_c):
+    def debug_print_muscles(self,lst,indiv_muscle_c):
         print("Debug - Muscles: (Counter: %d)"%(indiv_muscle_c))
         i=0
-        while i<len(list):
-            print(list[i].name)
+        while i<len(lst):
+            print(lst[i].name)
             i+=1
         print("")
+    def debug_print_credits_sorted(self):
+        printSet=[]
+        musNum=len(self.muscle_groups)
+        i=0
+        while i<musNum:
+            printSet.append(self.muscle_groups[i])
+            i+=1
+        cr_ave=0
+        #order after credit
+        printSet.sort(key=lambda x: x.credit, reverse=False)
+        for i in range(0,len(printSet),1):
+            cr_ave+=printSet[i].credit
+        cr_ave/=len(printSet)
+        print("Credits (Ave %2.2f): [ "%(cr_ave),end='')
+        for i in range(0,len(printSet)-1,1):
+            print("%s:%2.2f, "%(printSet[i].name,printSet[i].credit),end='')
+        print("%s:%2.2f"%(printSet[len(printSet)-1].name,printSet[len(printSet)-1].credit),end='')
+        print(" ]")
     def debug_print_credits(self):
         cr_ave=0
         for i in range(0,len(self.muscle_groups),1):
@@ -410,6 +454,33 @@ class workout(object):
             print("%s:%2.2f, "%(self.muscle_groups[i].name,self.muscle_groups[i].credit),end='')
         print("%s:%2.2f"%(self.muscle_groups[len(self.muscle_groups)-1].name,self.muscle_groups[len(self.muscle_groups)-1].credit),end='')
         print(" ]")
+    def debug_print_credits_workingSet(self):
+        cr_ave=0
+        for i in range(0,len(self.muscle_groups),1):
+            cr_ave+=self.muscle_groups[i].credit
+        cr_ave/=len(self.muscle_groups)
+        print("WorkingSet[Cred] (Ave %2.2f): [ "%(cr_ave),end='')
+        for i in range(0,len(self.muscle_workingSet)-1,1):
+            print("%s:%2.2f, "%(self.muscle_workingSet[i].name,self.muscle_workingSet[i].credit),end='')
+        print("%s:%2.2f"%(self.muscle_workingSet[len(self.muscle_workingSet)-1].name,self.muscle_workingSet[len(self.muscle_workingSet)-1].credit),end='')
+        print(" ]")
+    def debug_print_urgency_workingSet(self):
+        urg_ave=0
+        for i in range(0,len(self.muscle_groups),1):
+            urg_ave+=self.muscle_groups[i].urgency
+        urg_ave/=len(self.muscle_groups)
+        print("WorkingSet[Urg] (Ave %2.2f): [ "%(urg_ave),end='')
+        for i in range(0,len(self.muscle_workingSet)-1,1):
+            print("%s:%2.2f, "%(self.muscle_workingSet[i].name,self.muscle_workingSet[i].urgency),end='')
+        print("%s:%2.2f"%(self.muscle_workingSet[len(self.muscle_workingSet)-1].name,self.muscle_workingSet[len(self.muscle_workingSet)-1].urgency),end='')
+        print(" ]")
+    def debug_print_muscleList(self,mlst):
+        lstlen=len(mlst)
+        i=0
+        while i<lstlen:
+            print(mlst[i].name)
+            i+=1
+        print("")
     #------------------------------------------------------------------------------------------
     def history_show_previousWorkoutSchedule(self):
         #TODO
@@ -468,20 +539,31 @@ class workout(object):
     #------------------------------------------------------------------------------------------
     def muscles_analyse_history(self):
         [i.derive_credit_fromHistory(self.credit_center) for i in self.muscle_groups]
+        [i.derive_urgency(self.credit_center,self.workouts_perWeek) for i in self.muscle_groups]
     def muscles_analyse_urgency(self):
+        #First, init the workingSet, later on we work on that
+        self.muscle_workingSet=[]
+        musNum=len(self.muscle_groups)
+        i=0
+        while i<musNum:
+            self.muscle_workingSet.append(self.muscle_groups[i])
+            i+=1
         #order after credit
-        self.muscle_groups.sort(key=lambda x: x.credit, reverse=False)
+        self.muscle_workingSet.sort(key=lambda x: x.urgency, reverse=True)
+        #ToDo: A proper Value / Calculation for the precedence_tolerance
+        self.bigMuscle_precedence_tolerance=0.29
     def muscles_assure_rest(self):
         #ToDo: Use the workouts per Week to determine the number of days between workouts or introduce an additional parameter for this (detailed workout spread across days) to make sure that a muscle has 48-72 h of rest
         #move muscles with no preceeding rest (i.e. was trained last workout) to the end of the list
-        i=len(self.muscle_groups)-1
+        i=len(self.muscle_workingSet)-1
         while i>=0:
-            joined_history=self.muscle_groups[i].history_shortened+self.muscle_groups[i].schedule
+            joined_history=self.muscle_workingSet[i].history_shortened+self.muscle_workingSet[i].schedule
             hist_len=len(joined_history)
             if hist_len>0:
                 if joined_history[hist_len-1]==1:
-                    #self.muscle_groups.append(self.muscle_groups.pop(self.muscle_groups.index(5)))
-                    self.muscle_groups.append(self.muscle_groups.pop(i))
+                    #self.muscle_workingSet.append(self.muscle_workingSet.pop(self.muscle_workingSet.index(5)))
+                    #self.muscle_workingSet.append(self.muscle_workingSet.pop(i))
+                    self.muscle_workingSet.pop(i)
             i-=1
     #------------------------------------------------------------------------------------------
     def _is_supersetMuscle(self,muscle):
@@ -525,17 +607,17 @@ class workout(object):
             picked=picked_pre
             i=0
             while countDiff>0:
-                while i<len(self.muscle_groups):
+                while i<len(self.muscle_workingSet):
                     already_picked=0
                     j=0
                     while j<len(picked):
                     #for j in range(0,len(picked),1):
-                        if self.muscle_groups[i]==picked[j]:
+                        if self.muscle_workingSet[i]==picked[j]:
                             already_picked=1
                             break
                         j+=1
                     if already_picked==0:
-                        picked.append(self.muscle_groups[i])
+                        picked.append(self.muscle_workingSet[i])
                         i+=1
                         break
                     i+=1
@@ -550,7 +632,7 @@ class workout(object):
                         #now we have to ease-down again. For that we pick one non-superset exercise with the highest credit aka lowest urgency
                         #The case might occur, where all are supersets and we are lying one exercise over the limit. In that case: Fuck it. just leave it like that. We are in a state of highered urgency anyways.
                         picked.sort(key=lambda x: x.muscle_class, reverse=True)
-                        picked.sort(key=lambda x: x.credit, reverse=False)
+                        picked.sort(key=lambda x: x.urgency, reverse=True)
                         j=len(picked)-1
                         while j>0:
                             supset_check=self._is_supersetMuscle(picked[j])
@@ -564,7 +646,7 @@ class workout(object):
             #ease-down
             picked=[]
             picked_pre.sort(key=lambda x: x.muscle_class, reverse=True)
-            picked_pre.sort(key=lambda x: x.credit, reverse=False)
+            picked_pre.sort(key=lambda x: x.urgency, reverse=True)
             final_c=0
             i=0
             bigMuscle_threshold=2
@@ -600,7 +682,7 @@ class workout(object):
                 return (picked,indiv_muscle_c)
             elif countDiff<0:
                 #remove a superset
-                picked.sort(key=lambda x: x.credit, reverse=False)
+                picked.sort(key=lambda x: x.urgency, reverse=True)
                 remove=""
                 for i in range(0,len(self.supersets)):
                     if picked[len(picked)-1].name==self.supersets[i][0]:
@@ -619,7 +701,7 @@ class workout(object):
                     i+=1
             else:
                 #remove, until countDiff==0
-                picked_pre.sort(key=lambda x: x.credit, reverse=False)
+                picked_pre.sort(key=lambda x: x.urgency, reverse=True)
 #                 for l in range(0,len(picked)):
 #                     print("picked: %s"%(picked[l].name))
                 while countDiff>0:
@@ -633,7 +715,7 @@ class workout(object):
                             i=len(picked_pre)-2
                             while i>=0:
                                 #print("test %s"%(picked_pre[i].name))
-                                if picked_pre[i].credit>=1+picked_pre[i].malus:
+                                if picked_pre[i].credit>=1+picked_pre[i].malus:#ToDo: Check Credit vs. Urgency
                                     supset_check=self._is_supersetMuscle(picked_pre[i])
                                     if not supset_check[0]:
                                         picked_pre.pop(i)
@@ -641,7 +723,7 @@ class workout(object):
                                         break
                                 i-=1
                         if countDiff>0:
-                            #Here now, one could do: Remove the highest superset and then add the first non-superset muscle from self.muscle_groups
+                            #Here now, one could do: Remove the highest superset and then add the first non-superset muscle from self.muscle_workingSet
                             #But I say: Fuck it, just leave it like that and train one muscle more this workout
                             break
                     elif countDiff==2:
@@ -703,9 +785,9 @@ class workout(object):
                     break
             return (picked,indiv_muscle_c)
     def _muscle_reappend(self,musnam):
-        for i in range(0,len(self.muscle_groups)):
-            if self.muscle_groups[i].name==musnam:
-                self.muscle_groups.append(self.muscle_groups.pop(i))
+        for i in range(0,len(self.muscle_workingSet)):
+            if self.muscle_workingSet[i].name==musnam:
+                self.muscle_workingSet.append(self.muscle_workingSet.pop(i))
     def workoutArrange_optimization_smoothen(self,picked_pre,indiv_muscle_c):
         #no delt_back with rotator_cuff. Precedence to rotator_cuff
         #no delt_front with delt_side -> pop delt_front back
@@ -752,7 +834,7 @@ class workout(object):
                 while j>=0:
                     if picked[j].name=="quads & glutes":#This assumes that quads and glutes can only occur together. Thus it only checks for one
                         replace+=1
-                        if picked[j].credit>picked[i].credit:
+                        if picked[j].urgency<picked[i].urgency:
                             self._muscle_reappend(picked[j].name)
                             picked.pop(j)
                             if j<i:
@@ -764,23 +846,24 @@ class workout(object):
                     j-=1
             i-=1
         
-        #pop&append the removed ones to self.muscle_groups
+        #pop&append the removed ones to self.muscle_workingSet
         #then again self.muscles_assure_rest
-        #this makes sure that the add-for-replacement works properly. In the worst case, the remove muscle becomes appended again
-        self.muscles_assure_rest()
+        #this makes sure that the add-for-replacement works properly. In the worst case, the removed muscle becomes appended again
+        #Version-History: An additional assure_rest is not required any more, since resting muscles are not part of the workingSet
+        #self.muscles_assure_rest()
         
         while replace>0:
-            for i in range(0,len(self.muscle_groups),1):
+            for i in range(0,len(self.muscle_workingSet),1):
                 already_picked=0
                 j=0
                 while j<len(picked):
                 #for j in range(0,len(picked),1):
-                    if self.muscle_groups[i]==picked[j]:
+                    if self.muscle_workingSet[i]==picked[j]:
                         already_picked=1
                     j+=1
                 if already_picked==0:
                     if replace>=2:
-                        picked.append(self.muscle_groups[i])
+                        picked.append(self.muscle_workingSet[i])
                         replace-=1
                         size_pre=len(picked)
                         picked=self.workoutArrange_group_superset(picked)
@@ -788,9 +871,9 @@ class workout(object):
                         if size_post>size_pre:
                             replace-=1
                     else:
-                        supset_check=self._is_supersetMuscle(self.muscle_groups[i])
+                        supset_check=self._is_supersetMuscle(self.muscle_workingSet[i])
                         if not supset_check[0]:
-                            picked.append(self.muscle_groups[i])
+                            picked.append(self.muscle_workingSet[i])
                             replace-=1
                             break
         return (picked,indiv_muscle_c)
@@ -818,13 +901,13 @@ class workout(object):
             if set_count==1:
                 added_new+=1
                 if set_found==0:
-                    for i in range(0,len(self.muscle_groups),1):
-                        if self.muscle_groups[i].name==self.supersets[j][1]:
-                            picked.append(self.muscle_groups[i])
+                    for i in range(0,len(self.muscle_workingSet),1):
+                        if self.muscle_workingSet[i].name==self.supersets[j][1]:
+                            picked.append(self.muscle_workingSet[i])
                 elif set_found==1:
-                    for i in range(0,len(self.muscle_groups),1):
-                        if self.muscle_groups[i].name==self.supersets[j][0]:
-                            picked.append(self.muscle_groups[i])
+                    for i in range(0,len(self.muscle_workingSet),1):
+                        if self.muscle_workingSet[i].name==self.supersets[j][0]:
+                            picked.append(self.muscle_workingSet[i])
             #elif set_count==2:
                 #done. nothing more to do. superset already fully included
             #elif set_count==0:
@@ -867,13 +950,13 @@ class workout(object):
             credit_average=0
             malus_ave=0
             bonus_ave=0
-            for i in range(0,len(self.muscle_groups)):
-                credit_average+=self.muscle_groups[i].credit
-                malus_ave+=self.muscle_groups[i].malus
-                bonus_ave+=self.muscle_groups[i].bonus
-            credit_average/=len(self.muscle_groups)
-            malus_ave/=len(self.muscle_groups)
-            bonus_ave/=len(self.muscle_groups)
+            for i in range(0,len(self.muscle_workingSet)):
+                credit_average+=self.muscle_workingSet[i].credit
+                malus_ave+=self.muscle_workingSet[i].malus
+                bonus_ave+=self.muscle_workingSet[i].bonus
+            credit_average/=len(self.muscle_workingSet)
+            malus_ave/=len(self.muscle_workingSet)
+            bonus_ave/=len(self.muscle_workingSet)
             #print("Aves %2.2f - %2.2f - %2.2f"%(credit_average,malus_ave,bonus_ave))
             if credit_average>=self.credit_center+bonus_ave-malus_ave:
                 indiv_muscle_c-=1
@@ -884,43 +967,46 @@ class workout(object):
         
         picked=[]
         for i in range(0,self.muscles_per_workout,1):
-            if self.muscle_groups[i].muscle_class==1:
-                picked.append(self.muscle_groups[i])
+            if self.muscle_workingSet[i].muscle_class==1:
+                picked.append(self.muscle_workingSet[i])
         picked_big=len(picked)
         if picked_big<2:
-            for j in range(self.muscles_per_workout,len(self.muscle_groups),1):
-                #condition to do the following: The credit of a big muscle minus the precedence_tolerance is lower than the credit of position 3
-                if self.muscle_groups[j].credit-self.muscle_groups[3].credit>=self.bigMuscle_precedence_tolerance:
+            for j in range(self.muscles_per_workout,len(self.muscle_workingSet),1):
+                #condition to do the following: The credit of a big muscle minus the precedence_tolerance is lower than the credit of position (last)
+                #if self.muscle_workingSet[j].credit-self.muscle_workingSet[indiv_muscle_c-1].credit>=self.bigMuscle_precedence_tolerance:
+                if self.muscle_workingSet[indiv_muscle_c-1].urgency-self.muscle_workingSet[j].urgency>=self.bigMuscle_precedence_tolerance:
                     break
                 else:
-                    if self.muscle_groups[j].muscle_class==1:
-                        picked.append(self.muscle_groups[j])
+                    if self.muscle_workingSet[j].muscle_class==1:
+                        picked.append(self.muscle_workingSet[j])
                         picked_big+=1
                         #print("tolerance %f"%(self.bigMuscle_precedence_tolerance))
-                        #print("adding precedence %s"%(self.muscle_groups[j].name))
+                        #print("adding precedence %s"%(self.muscle_workingSet[j].name))
                 if picked_big>=2:
                     break
             #misuse "picked_big" as a counter for "picked_total"
             i=0
             while picked_big<self.muscles_per_workout:
-                if self.muscle_groups[i].muscle_class==2:
-                    picked.append(self.muscle_groups[i])
+                if self.muscle_workingSet[i].muscle_class==2:
+                    picked.append(self.muscle_workingSet[i])
                     picked_big+=1
-                elif self.muscle_groups[i].muscle_class==1:
+                elif self.muscle_workingSet[i].muscle_class==1:
                     pass
                 else:
-                    print("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_groups[i].name)
+                    print("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_workingSet[i].name)
                     exit()
                 i+=1
         else:
             for i in range(0,self.muscles_per_workout,1):
-                if self.muscle_groups[i].muscle_class==2:
-                    picked.append(self.muscle_groups[i])
-                elif self.muscle_groups[i].muscle_class==1:
+                if self.muscle_workingSet[i].muscle_class==2:
+                    picked.append(self.muscle_workingSet[i])
+                elif self.muscle_workingSet[i].muscle_class==1:
                     pass
                 else:
-                    print("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_groups[i].name)
+                    print("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_workingSet[i].name)
                     exit()
+        #
+        #self.debug_print_muscleList(picked)
         #Superset-Grouping
         if self.group_by_superset:
             picked=self.workoutArrange_group_superset(picked)
@@ -935,14 +1021,16 @@ class workout(object):
         #for i in range(0,len(picked),1):
             picked[i].schedule.append(1)
             i+=1
-        for i in range(0,len(self.muscle_groups),1):
+        for i in range(0,len(self.muscle_groups),1):#Just a Note: Here it is intentionally 'muscle_groups' and not 'only the workingSet'
             if len(self.muscle_groups[i].schedule)<iteration:
                 self.muscle_groups[i].schedule.append(0)
     def compute_workoutSchedule_nextWorkout(self,iteration):
         self.muscles_analyse_history()
         self.muscles_analyse_urgency()
         self.muscles_assure_rest()
-        #self.debug_print_credits()
+        ##self.debug_print_credits()
+        #self.debug_print_credits_sorted()
+        #self.debug_print_urgency_workingSet()
         self.compute_workoutSchedule_nextWorkout_arrange(iteration)
     def compute_workoutSchedule(self):
         #for _ in range(0, 5, 1):
