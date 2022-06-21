@@ -8,3 +8,17 @@ In the defined class "workout" you may define your demands. That is, how many wo
 The tool stores the calculated schedule as a history in text-files and loads them during a run, to maintain a consistant suitable flow. After startup you are first told (again) the last loaded workouts, then the new ones are presented on the terminal.
 
 Before writing the history (i.e. appending the newly computed workouts), you are prompted a query on the console whether the persistent history files shall be updated or not. You can use this to just lookup the last preceding computation without creating a new one and unintentionally messing with the history files.
+
+
+## Cmd-Line Arguments
+
+Pass these as Command-Line Arguments to let it perform special functions
+
+### History Trimming Functionality
+
+Trims the History-Files down to the number of entries that are required for the Script to compute the schedule, that is, to derive the weight of the historical previous workout that decide about the upcoming order.
+(Respectively keeps the existing entries, i.e. changes nothing, in case the history files do not contain more than these.)
+
+```
+history trim
+```

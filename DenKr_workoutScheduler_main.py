@@ -335,23 +335,23 @@ class workout(object):
         self._add_muscle("chest",1,2,10)
         self._add_muscle("back",1,2,10)
         self._add_muscle("delt_front",2,0.75,5)
-        self._add_muscle("delt_back",2,1,5)
+        self._add_muscle("delt_rear",2,1,5)
         self._add_muscle("rotator_cuff",2,1.25,6)
         self._add_muscle("delt_side",2,1,5)
-        self._add_muscle("quads & glutes",1,1.75,10)
+        self._add_muscle("quads & glutes",1,1.5,10)
         #self._add_muscle("quads",1,1.75,10)#self._add_muscle("quads",1,2,10)
         #self._add_muscle("glutes",1,1.75,10)#self._add_muscle("glutes",1,2,10)
         self._add_muscle("bizeps",2,1,5)
         self._add_muscle("trizeps",2,1,5)
-        self._add_muscle("hamstrings",2,1,5)
+        self._add_muscle("hamstrings",2,0.9,5)#1
         self._add_muscle("abs",1,1.5,8)
-        self._add_muscle("calves",2,1,6)#self._add_muscle("calves",1,1.5,7)
+        self._add_muscle("calves",2,0.8,6)#self._add_muscle("calves",1,1.5,7)
         self._add_muscle("trapez",2,1,5)
-        self._add_muscle("lower_back",2,0.75,5)
+        self._add_muscle("lower_back",2,1,5)#0.75
         self.supersets=(
             ("chest","back"),
             ("bizeps","trizeps"),
-            #("delt_front","delt_back"),#makes no sense due to differing intervalls
+            #("delt_front","delt_rear"),#makes no sense due to differing intervalls
             #("trapez","delt_side")
         )
     #Here, you can safely change the numeric values per muscle.
@@ -360,7 +360,7 @@ class workout(object):
         self._add_muscle("chest",1,2,10)
         self._add_muscle("back",1,2,10)
         self._add_muscle("delt_front",2,0.75,5)
-        self._add_muscle("delt_back",2,1,5)
+        self._add_muscle("delt_rear",2,1,5)
         self._add_muscle("rotator_cuff",2,1.25,6)
         self._add_muscle("delt_side",2,1,5)
         self._add_muscle("quads & glutes",1,1.5,10)#1.75 per Week
@@ -482,6 +482,33 @@ class workout(object):
             i+=1
         print("")
     #------------------------------------------------------------------------------------------
+    def history_trim_trimFiles(self):
+        for x in self.muscle_groups:
+            x.history=x.history_shortened
+        self.history_write()
+    def history_trim(self):
+        #Trims the history-Files down to a number of entries corresponding to the least required amount (That is, the number of entries a calculation looks back to derive the urgency)
+        self.set()
+        self.history_read()
+        inputtry=0
+        while 1:
+            print("»History Files Trimming called. Shall I proceed?«")
+            inp=input()
+            if inp=="y" or inp=="yes" or inp=="ja" or inp=="j" or inp=="1":
+                print("-> »Trimming History«")
+                self.history_trim_trimFiles()
+                return True
+            elif inp=="n" or inp=="no" or inp=="nein" or inp=="n" or inp=="0":
+                print("-> »NOT Trimming History«")
+                return False
+            else:
+                print("-> »Invalid Input.",end='')
+                inputtry+=1
+                if inputtry>=3:
+                    print("«\n»Yeah, Ehem, I propose we just cancel this...«\n")
+                    return False
+                else:
+                    print(" Try again.«\n")
     def history_show_previousWorkoutSchedule(self):
         #TODO
         lenTotalMax=0
@@ -490,7 +517,7 @@ class workout(object):
             lenTotalMax=max(lenTotalMax,len(self.muscle_groups[i].history_shortened))
             i+=1
         lenTotalMax=min(lenTotalMax,self.workouts_perWeek*2)
-        
+
         print("######################")
         print("# Previous Workouts: #")
         i=lenTotalMax
@@ -504,7 +531,7 @@ class workout(object):
                         print(self.muscle_groups[j].name)
             print("")
             i-=1
-            
+
         print("#########################################")
         print("#########################################")
         print("#########################################\n")
@@ -516,7 +543,8 @@ class workout(object):
             i=0
             while i<len(self.muscle_groups[0].schedule):
                 print("===============")
-                print("== Workout %d"%(i+1))
+                #print("== Workout %d"%(i+1))
+                print("== DotW, 2022-MM-DD")
                 print("---------------")
                 for j in range(0,len(self.muscle_groups),1):
                     if self.muscle_groups[j].schedule[i]==1:
@@ -527,7 +555,8 @@ class workout(object):
             i=len(self.muscle_groups[0].schedule)-1
             while i>=0:
                 print("===============")
-                print("== Workout %d"%(i+1))
+                #print("== Workout %d"%(i+1))
+                print("== DotW, 2022-MM-DD")
                 print("---------------")
                 for j in range(0,len(self.muscle_groups),1):
                     if self.muscle_groups[j].schedule[i]==1:
@@ -789,9 +818,9 @@ class workout(object):
             if self.muscle_workingSet[i].name==musnam:
                 self.muscle_workingSet.append(self.muscle_workingSet.pop(i))
     def workoutArrange_optimization_smoothen(self,picked_pre,indiv_muscle_c):
-        #no delt_back with rotator_cuff. Precedence to rotator_cuff
+        #no delt_rear with rotator_cuff. Precedence to rotator_cuff
         #no delt_front with delt_side -> pop delt_front back
-        #maybe no delt_back with delt_side
+        #maybe no delt_rear with delt_side
         #No Quads&Glutes with lower_back -> pop-back the one with higher credit
         #only when difference in urgency is really big
         #todo
@@ -803,7 +832,7 @@ class workout(object):
             if picked[i].name=="rotator_cuff":
                 j=len(picked)-1
                 while j>=0:
-                    if picked[j].name=="delt_back":
+                    if picked[j].name=="delt_rear":
                         replace+=1
                         self._muscle_reappend(picked[j].name)
                         picked.pop(j)
@@ -821,7 +850,7 @@ class workout(object):
 #                         if j<i:
 #                             i-=1
 #                         continue
-                    if picked[j].name=="delt_back":
+                    if picked[j].name=="delt_rear":
                         replace+=1
                         self._muscle_reappend(picked[j].name)
                         picked.pop(j)
@@ -1096,7 +1125,7 @@ def main_variant1():
     #Optional, eher nicht: Add Scale_Up & Scale_Down again. Mag Sinn ergeben, um die Credits besser auszuglätten. Vielleicht aufeinander bezogen -> Wenn einmal up-scaled wurde den threshold verringern, welcher die kommenden Workouts down_scaled. Damit mag sich ergeben, dass ein workout mal ein (oder zwei) Muskeln mehr trainiert, wenn sie dringend anliegen und man dann ein kommendes Workout etwas kürzer gestalten kann. (Kann einerseits sinnvoll sein, um solche Muskelgruppen nicht zu lange zu pausieren und dann zu schnell aufeinander zwei Mal trainiert. Ist aber andererseits auch wieder dämlich, weil dann einzelne Workouts zu lang werden, was schlecht für das Testo-Level ist...)
     err=0  # @UnusedVariable
     #print("Call it with Python 3.7 or higher! This requires order-preserving dictionaries.")
-    print("DenKr_workoutScheduler (v. beta 0.1)")
+    print("DenKr_workoutScheduler (v. beta 0.2)")
     print(" (Path of Script: %s) [Here, the History is stored]"%(progPath))
     print("")
     print("It calculates a progressing schedule for your resistance-training workout, i.e. tells you in which order you may train your muscle-groups.")
@@ -1104,13 +1133,13 @@ def main_variant1():
     print("The tool stores the calculated schedule as a history in text-files and loads them during a run, to maintain a consistant suitable flow. After startup you are first told (again) the last loaded workouts, then the new ones are presented on the terminal.")
     print("Before writing the history (i.e. appending the newly computed workouts), you are prompted a query on the console whether the persistent history files shall be updated or not. You can use this to just lookup the last preceding computation without creating a new one and unintentionally messing with the history files.")
     print("\n--------------------------------\n")
-    print("This Workout-Scheduler has as baseline the assumption, that you work-out every second day (i.e. 3.5 times a week) and are with that able to attack the big muscles twice a week, the smalls once and abs & calves sahre a thrice in weeks.")
+    print("This Workout-Scheduler has as baseline the assumption, that you work-out every second day (i.e. 3.5 times a week) and are with that able to attack the big muscles twice a week, the smalls once and abs & calves thrice in two weeks.")
     print("This scales very well if you adjust the total-workouts-per-week value and the workouts_perMuscle_perWeek to for instance attack them more fequently or with a higher volume in case you are more advanced.")
     print("You might want to use a workaround if you intend to work-out below the recommended baseline volume:")
     print("You could work with the default-values but work-out less frequently than every second day. By that, you are still attacking all muscles nicely proportoned but are leaving some extra gains because over surpluss regeneration.")
     print("\nWhat you still got to do: Pay attention to your back! Spread the work appropriately to all these different muscles on your back. This tool will only tell you to 'train your back/back-delts/lower-back'. As you know, there is a lot more. Rotator-Cuff, Teres major, Teres Minor, Infraspinatus, Supraspinatus and whatnot. Hence you have to decide to train a Deadlift, Facepull, Y- or W-movement and stuff to hit all the muscles back frequently. Use the workout recommendation for 'back/lower-back/back-delt/trapez' to choose exercises to complete all the back.")
     print("That is, of course, pretty much valid for all muscle groups. You are to fiddle around a little with the schedule recommendation of this tool.")
-    print("Another tipp: In times, when you are proposed a smaller workout - only 3 muscles or so - you may want to fill the hole with something beneficial instead of just stopping the workout early. Fill in an additional session of facepulls for example. Do some external rotation exercise. Hit some back shoulder / back muscles, which could use some additional training. Do some isolated lower-back movement, like bend down to hyper-extension. There's always something to do.")
+    print("Another Tipp: In times, when you are proposed a smaller workout - only 3 muscles or so - you may want to fill the hole with something beneficial instead of just stopping the workout early. Fill in an additional session of facepulls for example. Do some external rotation exercise. Hit some back shoulder / back muscles, which could use some additional training. Do some isolated lower-back movement, like bend down to hyper-extension. There's always something to do.")
     print("")
     print("Reverse Output:")
     print("Watch out for the Variable 'upcomingOutput_Reverse' inside the function 'DenKr_workoutScheduler_Main()'.")
@@ -1166,18 +1195,62 @@ def signal_handler__Ctrl_c(sig, frame):
     LogFile.close()
     sys.exit(0)
 
+#Return:
+#  0 - No Arguments. Continue normal operation
+#  1 - Cmd-Line Mux did all the work. Terminate
+#  2 - Invalid Cmd-Line Arguments
+#  3 - Reserved
+def cmdLine_Mux(argc,argv):
+    # todo
+    if 0>=argc:
+        return 0
+    else:
+        argc-=1
+        curArg=0
+        if argv[curArg]=="history":
+            if 0<argc:
+                argc-=1
+                curArg+=1
+                if argv[curArg]=="trim":
+                    work=workout()
+                    work.history_trim()
+                    return 1
+                else:
+                    print("-> Invalid Cmd-Line Argument after \"trim\".")
+                    return 2
+            else:
+                print("-> Insufficient Cmd-Line Arguments after \"trim\".")
+                return 2
+        else:
+            print("-> Invalid Cmd-Line Argument.")
+            return 2
+def cmdLine_Mux__errHandling(argc,argv):
+    err=cmdLine_Mux(argc,argv)
+    if 0==err:
+        pass
+    elif 1==err:
+        print("\nDone.")
+        print(sys.exit())
+    elif 2==err:
+        print("\nExiting...")
+        print(sys.exit())
+    else:
+        print(sys.exit())
+
 #------------------------------------------------------------------------------------------
 
-    
+
 def main(argc,argv):
     SET_ansi_escape_use()
     #printansi(ansi_blue,"""I can even use colors!\n""")
     # - - - - - - - - -
+    cmdLine_Mux__errHandling(argc,argv)
+    # - - - - - - - - -
     err=main_variant1()
     #err=main_variant2()
     return err
-    
-    
+
+
 if __name__ == '__main__':
     signal.signal(signal.SIGINT,signal_handler__Ctrl_c)
     #print('Number of arguments:',len(argv),'arguments.')
@@ -1186,14 +1259,14 @@ if __name__ == '__main__':
     argv=sys.argv[1:]
     # - - - - - - - - -
     global progPath
-    #print('sys.argv[0] =', sys.argv[0])             
-    #progPath = os.path.dirname(sys.argv[0])        
+    #print('sys.argv[0] =', sys.argv[0])
+    #progPath = os.path.dirname(sys.argv[0])
     #print('path =', progPath)
-    #print('full path =', os.path.abspath(progPath)) 
+    #print('full path =', os.path.abspath(progPath))
     #progPath = os.path.realpath(__file__)
-    #print('realpath = ', progPath) 
+    #print('realpath = ', progPath)
     #progPath = os.path.dirname(progPath)
-    #print('realpath = ', progPath) 
+    #print('realpath = ', progPath)
     progPath = os.path.realpath(__file__)
     progPath = os.path.dirname(progPath)
     #print('Path of Script: ', progPath)
