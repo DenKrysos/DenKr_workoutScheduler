@@ -544,7 +544,7 @@ class workout(object):
             while i<len(self.muscle_groups[0].schedule):
                 print("===============")
                 #print("== Workout %d"%(i+1))
-                print("== DotW, 2022-MM-DD")
+                print("== DotW, 2023-MM-DD")
                 print("---------------")
                 for j in range(0,len(self.muscle_groups),1):
                     if self.muscle_groups[j].schedule[i]==1:
@@ -556,7 +556,7 @@ class workout(object):
             while i>=0:
                 print("===============")
                 #print("== Workout %d"%(i+1))
-                print("== DotW, 2022-MM-DD")
+                print("== DotW, 2023-MM-DD")
                 print("---------------")
                 for j in range(0,len(self.muscle_groups),1):
                     if self.muscle_groups[j].schedule[i]==1:
