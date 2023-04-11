@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
+
+'''
+Created on 2023-04-11
+
+@author: Dennis Krummacker
+'''
+
+VERSION_DevStage="beta-"
+VERSION_MAJOR=0
+VERSION_MINOR=3
+VERSION_PATCH=0
+VERSION_TWEAK=0
+
+if 0<VERSION_TWEAK:
+    VERSION_NUMBER="%s.%s.%s_%s"%(VERSION_MAJOR,VERSION_MINOR,VERSION_PATCH,VERSION_TWEAK)
+else:
+    VERSION_NUMBER="%s.%s.%s"%(VERSION_MAJOR,VERSION_MINOR,VERSION_PATCH)
+
+if VERSION_DevStage and 0<len(VERSION_DevStage):
+    VERSION_DESCRIPTION="%s%s"%(VERSION_DevStage,VERSION_NUMBER)
+else:
+    VERSION_DESCRIPTION="%s"%(VERSION_NUMBER)

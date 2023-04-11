@@ -9,7 +9,7 @@ DenKr_workoutScheduler further description
     - Implementation in Python (3)
                 >>Dennis Krummacker<<
 
-Created on 18.11.2020
+Created on 2020-11-18
                 
 Notes:
     - 
@@ -24,7 +24,7 @@ It defines:
 @license:    license
 
 @contact:    dennis.krummacker@gmail.com
-@deffield    updated: 20.11.2020
+@deffield    updated: 2023-04-09
 '''
 
 
@@ -37,21 +37,23 @@ import signal, time, datetime  # @UnusedImport
 from sys import argv
 from builtins import object
 #import builtins
-import os
-import json
 #import numpy as numpy
 #    numpy.lcm.reduce([40, 12, 20])
 #import bz2
 # from package.WindowManager_XServer import *  # @UnusedImport @UnusedWildImport
 #from pprint import pprint
+import random
+from itertools import groupby
+#import bisect
 
 
 ##DenKr Packages
 from package.ansiescape import *  # @UnusedImport @UnusedWildImport
+from auxiliary import math  # @UnusedImport @UnusedWildImport
 
 
 try:
-    input= raw_input  # @UndefinedVariable @ReservedAssignment
+    input=raw_input  # @UndefinedVariable @ReservedAssignment
 except NameError:
     pass
 ##Or Alternative:
@@ -68,205 +70,38 @@ if sys.version_info < (3,):#Compatibility, because xrange has changed to range f
 
 
 
-
-
-
-
-#-----------------------------------------------------
-#-----------------------------------------------------
-#-----------------------------------------------------
-def lcm(x, y):
-    for currentPossibleLCM in range(max(x,y), (x*y)+1):
-        if((currentPossibleLCM % x == 0) and (currentPossibleLCM % y == 0)):
-            return currentPossibleLCM
-#-----------------------------------------------------
-#-----------------------------------------------------
-#-----------------------------------------------------
-
-
-
+##Other Files for Project
+##Workout-Scheduler Packages
+from muscle import muscle
+from exercise import exercise
+##Fundamental Project Settings
+from settings import VersionInfo
+##Regarding Arrangement/Ensemble
+from settings.values import muscleIdentifier
+##Individual Configuration
+from _1cfg.configuration import upcomingOutput_Reverse, workouts_perWeek, num_workout_toCompute
+##Global Variables
+from settings import global_variables
 
 
 
 
 
 
-#-----------------------------------------------------
-history_file_subpath = "0history"
-history_file_fExt = ".json"
-#-----------------------------------------------------
-#-----------------------------------------------------
-#-----------------------------------------------------
-class muscle(object):
-    instance_counter=0
-    #------------------------------------------------------------------------------------------
-    def __init__(self):
-        """Explain it!"""
-        muscle.instance_counter += 1
-        """Initialize some Stuff"""
-        self.clear()
-        self._sock=0
-    #------------------------------------------------------------------------------------------
-    def __del__(self):
-        muscle.instance_counter -= 1
-    #------------------------------------------------------------------------------------------
-    def clear(self):
-        self.name=""
-        self.muscle_class=0#0: undefined, 1: big muscle, 2: small muscle
-        self.wo_pW = 0#Workouts per Week for this muscle
-        self.set_pW = 0#Sets per Week
-        self.malus=0.0#A "perWorkout" for this muscle. Also used as "Malus" for not training it
-        self.bonus=0.0
-        self.credit=0.0#used to determine the urgency of training this muscle
-        self.urgency=0.0#A more thorough, elaborate and sophisticated value to determine to actual urgency. The credit goes into its calculation
-        self.history = []
-        self.history_shortened = []
-        #self.urgency=-1
-        self.schedule = []
-    #------------------------------------------------------------------------------------------
-    def set_attributs(self,wo_perWeek_total,name,muscle_class,wo_perWeek,set_perWeek):
-        self.name=name
-        self.muscle_class=muscle_class
-        self.wo_pW=wo_perWeek
-        self.set_pW=set_perWeek
-        self.malus=wo_perWeek/wo_perWeek_total
-        self.bonus=1/wo_perWeek
-    #------------------------------------------------------------------------------------------
-    def history_create_file(self,path,file_full):
-        try:
-            os.mkdir(path)
-        except FileExistsError:
-            pass
-        except OSError:
-            print("Creation of the directory %s failed" % path)
-        except:
-            print("Creation of the directory %s failed" % path)
-        #else:
-            #print("Successfully created the directory %s " % path)
-        try:
-            f = open(file_full, mode='w', encoding = 'utf-8')
-        except FileNotFoundError:
-            print("Creation of history-file %s failed" % file_full)
-            return
-        except:
-            print("Creation of history-file %s failed" % file_full)
-            return
-        #finally:
-            #f.close()
-        return f
-    def history_read_file(self):
-        fpath=os.path.join(progPath,history_file_subpath)
-        ffull=os.path.join(fpath,self.name+history_file_fExt)
-        try:
-            f = open(ffull, mode='r', encoding = 'utf-8')
-            # perform file operations
-            try:
-                self.history=json.load(f)
-            except json.decoder.JSONDecodeError:
-                self.history=[]
-            #self.history = json.loads(bz2.BZ2File(ffull).read().decode())
-            f.close()
-        except FileNotFoundError:
-            #f = self.history_create_file(fpath,ffull)
-            self.history=[]
-        #finally:
-            #f.close()
-        return
-    def history_write_file(self):
-        fpath=os.path.join(progPath,history_file_subpath)
-        ffull_tmp=os.path.join(fpath,self.name+history_file_fExt+".tmp")
-        ffull=os.path.join(fpath,self.name+history_file_fExt)
-        if os.path.exists(ffull_tmp):# We don't want that: First delete existing one
-            os.remove(ffull_tmp)
-        try:
-            #f = open(ffull_tmp, mode='w', encoding = 'utf-8')
-            f=self.history_create_file(fpath,ffull_tmp)
-            #File Operations
-            json.dump(self.history,f)
-            f.close()
-        except:
-            print("Wrting of history-file %s failed" % ffull_tmp)
-            return
-        #finally:
-            #f.close()
-        #Replace actual File with temp-one
-        if os.path.exists(ffull):
-            os.remove(ffull)
-        os.rename(ffull_tmp,ffull)
-    def history_prepare_shortened(self,workouts_perWeek):
-        toLoad=int(workouts_perWeek*2)#4
-        if len(self.history)<=toLoad:
-            self.history_shortened=self.history[0:len(self.history)]
-        else:
-            self.history_shortened=self.history[len(self.history)-toLoad:len(self.history)]
-    def history_prepare_shortened_exerciseOriented(self):
-        #prepare a shortened history over 2 weeks
-        found_wo=0
-        wo_toFind=self.wo_pW*2#4
-        history_len=len(self.history)
-        i=history_len-1
-        while i>=0:
-            if self.history[i]==1:
-                found_wo+=1
-            elif self.history[i]==0:
-                pass
-            else:
-                print("Malformed History for Muscle %s. Exiting..." % self.name)
-                exit()
-            if found_wo>=wo_toFind:
-                break
-            i-=1
-        if i<0:
-            i=0
-        self.history_shortened=self.history[i:history_len]
-    def history_push_schedule(self):
-        self.history=self.history+self.schedule
-        self.schedule=[]
-    #------------------------------------------------------------------------------------------
-    def derive_credit_fromHistory(self,credit_center):
-        #derive the credit over 2 weeks
-        self.credit=credit_center
-        joined_history=self.history_shortened+self.schedule
-        hist_len=len(joined_history)
-        if hist_len>0:
-            i=hist_len-1
-            while i>=0:
-                if joined_history[i]==0:
-                    self.credit-=self.malus
-                elif joined_history[i]==1:
-                    self.credit+=self.bonus
-                else:
-                    print("Malformed History while Credit calculation. Exiting...")
-                    exit()
-                i-=1
-    #------------------------------------------------------------------------------------------
-    def derive_urgency(self,credit_center,wo_perWeek_total):
-        #To make it a little more sophisticated: Derive a value which influences the urgency based on a ratio of workout-free days in relation to workouts-to-do (-> Long free period for a muscle -> high urgency. -> Many workouts with short pause-periods -> lowers urgency. -> Pretty much in schedule and even distribution -> low to none influence)
-        #  - To account for that, I analyse the last resting period
-        rest_period=0
-        joined_history=self.history_shortened+self.schedule
-        hist_len=len(joined_history)
-        if hist_len>0:
-            i=hist_len-1
-            while i>=0:
-                if joined_history[i]==0:
-                    rest_period+=1
-                elif joined_history[i]==1:
-                    break
-                else:
-                    print("Malformed History while Credit calculation. Exiting...")
-                    exit()
-                i-=1
-        rest_supposed=(wo_perWeek_total-self.wo_pW)/self.wo_pW
-        rest_ratio=rest_period/rest_supposed
-        #
-        #ToDo: As factor for the rest_ratio, another value might be better suited
-        self.urgency=(credit_center-self.credit)/self.bonus+0.5*rest_ratio
-#-----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
         
 #-----------------------------------------------------
 #-----------------------------------------------------
-    
+#-----------------------------------------------------
 class workout(object):
     instance_counter=0# should always stay '1' during runtime
     #------------------------------------------------------------------------------------------
@@ -275,37 +110,21 @@ class workout(object):
         workout.instance_counter += 1
         """Initialize some Stuff"""
         self.muscle_groups=[]
+        self.exercises=[]
+        self.exercises_excluded=[]
         self.workouts_perWeek=0
         self.supersets=()
         self.bigMuscle_precedence_tolerance=0.0
         self.num_workout_toCompute=0
         self.group_by_superset=0
         self.muscles_per_workout=0
-        #self.chest=muscle()#Brust -- Chest
-        #self.back=muscle()#Rücken -- Back
-        #self.quads=muscle()#Quadrizeps (Oberschenkel) -- Quads
-        #self.glutes=muscle()#Pobacken (Gluteus Maximus) -- Glutes
-        #self.hamstrings=muscle()#Beinbizeps
-        #self.abs=muscle()#Bauch & Waden - Abs/Calves | Liegen mehr zwischen Groß&Klein. Teilen sich miteinander ein 3-Mal innerhalb von 2 Wochen (Werden gern zusammengefasst, haben aber nichts groß miteinander zu tun)
-        #self.calves=muscle()#Bauch & Waden - Abs/Calves | Liegen mehr zwischen Groß&Klein. Teilen sich miteinander ein 3-Mal innerhalb von 2 Wochen (Werden gern zusammengefasst, haben aber nichts groß miteinander zu tun)
-        #self.bizeps=muscle()#Bizeps
-        #self.trizeps=muscle()#Trizeps
-        #self.delts_back=muscle()#Back-Delts (Hinterer (oberer) Schulter-Muskel)
-        #self.delts_side=muscle()#Side-Delts (Seitlicher (oberer) Schulter-Muskel)
-        #self.delts_front=muscle()#Side-Delts (Seitlicher (oberer) Schulter-Muskel)
-        #self.trapez=muscle()#Trapezius
-        self.credit_center=4
+        self.credit_center=0
         # - - - - - - - - - -
         self.muscle_workingSet=[]
+        self.exercise_workingSet=[]
     #------------------------------------------------------------------------------------------
     def __del__(self):
         workout.instance_counter -= 1
-    #------------------------------------------------------------------------------------------
-    def _call_muscle_set_attributes(self,muscle,name,muscletype,wo_perWeek,sets_perWeek):
-        muscle.set_attributs(self.workouts_perWeek,name,muscletype,wo_perWeek,sets_perWeek)
-    def _add_muscle(self,name,muscletype,wo_perWeek,sets_perWeek):
-        self.muscle_groups.append(muscle())
-        self._call_muscle_set_attributes(self.muscle_groups[len(self.muscle_groups)-1],name,muscletype,wo_perWeek,sets_perWeek)
     #------------------------------------------------------------------------------------------
     def _set_basics_default(self):
         self.workouts_perWeek=3.5
@@ -313,9 +132,9 @@ class workout(object):
         self.num_workout_toCompute=int(self.workouts_perWeek*2)#6
         self.group_by_superset=1
     def set_basics(self):
-        self.workouts_perWeek=3.5
+        self.workouts_perWeek=workouts_perWeek
         #self.bigMuscle_precedence_tolerance=7/self.workouts_perWeek-1
-        self.num_workout_toCompute=int(self.workouts_perWeek*2)#6
+        self.num_workout_toCompute=num_workout_toCompute
         self.group_by_superset=1
     def set_phase2(self):
         #self.bigMuscle_precedence_tolerance=self.muscle_groups[0].malus*0.45
@@ -328,72 +147,40 @@ class workout(object):
             i+=1
         self.muscles_per_workout=int(muscles_perWeek_total//self.workouts_perWeek)
         if self.muscles_per_workout!=4:
-            print("Attention! A \"muscles_per_workout\" of other than 4 was calculated. You might want to have a look into that (maybe override the value directly, after \"set_phase2()\"). For most cases, 4 muscles per workout is an appropriate amount/value. This tool afterwards allows a reasonable deviation from that anyway to adjust individual workouts to the urgency of muscle groups.")
+            print("Attention! A \"muscles_per_workout\" of other than 4 was calculated. You might want to have a look into that (maybe overwrite the value directly, after \"set_phase2()\"). For most cases, 4 muscles per workout is an appropriate amount/value. This tool afterwards allows a reasonable deviation from that anyway to adjust individual workouts to the urgency of muscle groups.")
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    #Leave the default function just alone. It essentially only serves as a template
-    def _set_muscles_default(self):
-        self._add_muscle("chest",1,2,10)
-        self._add_muscle("back",1,2,10)
-        self._add_muscle("delt_front",2,0.75,5)
-        self._add_muscle("delt_rear",2,1,5)
-        self._add_muscle("rotator_cuff",2,1.25,6)
-        self._add_muscle("delt_side",2,1,5)
-        self._add_muscle("quads & glutes",1,1.5,10)
-        #self._add_muscle("quads",1,1.75,10)#self._add_muscle("quads",1,2,10)
-        #self._add_muscle("glutes",1,1.75,10)#self._add_muscle("glutes",1,2,10)
-        self._add_muscle("bizeps",2,1,5)
-        self._add_muscle("trizeps",2,1,5)
-        self._add_muscle("hamstrings",2,0.9,5)#1
-        self._add_muscle("abs",1,1.5,8)
-        self._add_muscle("calves",2,0.8,6)#self._add_muscle("calves",1,1.5,7)
-        self._add_muscle("trapez",2,1,5)
-        self._add_muscle("lower_back",2,1,5)#0.75
-        self.supersets=(
-            ("chest","back"),
-            ("bizeps","trizeps"),
-            #("delt_front","delt_rear"),#makes no sense due to differing intervalls
-            #("trapez","delt_side")
-        )
-    #Here, you can safely change the numeric values per muscle.
-    # But! Leave the names alone, they are internally used by some functions
+    def set_exercises(self):
+        exercise.set_exercises(self.exercises,self.exercises_excluded)
     def set_muscles(self):
-        self._add_muscle("chest",1,2,10)
-        self._add_muscle("back",1,2,10)
-        self._add_muscle("delt_front",2,0.75,5)
-        self._add_muscle("delt_rear",2,1,5)
-        self._add_muscle("rotator_cuff",2,1.25,6)
-        self._add_muscle("delt_side",2,1,5)
-        self._add_muscle("quads & glutes",1,1.5,10)#1.75 per Week
-        #self._add_muscle("quads",1,1.75,10)#self._add_muscle("quads",1,2,10)
-        #self._add_muscle("glutes",1,1.75,10)#self._add_muscle("glutes",1,2,10)
-        self._add_muscle("bizeps",2,1,5)
-        self._add_muscle("trizeps",2,1,5)
-        self._add_muscle("hamstrings",2,1,5)
-        self._add_muscle("abs",1,1.5,8)
-        self._add_muscle("calves",2,1,6)
-        self._add_muscle("trapez",2,1,5)
-        self._add_muscle("lower_back",2,0.75,5)
+        muscle.set_muscles(self.muscle_groups, self.workouts_perWeek)
         self.supersets=(
-            ("chest","back"),
-            ("bizeps","trizeps")
+            (muscleIdentifier.chest.value[0],muscleIdentifier.back.value[0]),
+            (muscleIdentifier.biceps.value[0],muscleIdentifier.triceps.value[0])
         )
     def set(self):
         self.set_basics()
         self.set_muscles()
+        self.set_exercises()
         self.set_phase2()
     #------------------------------------------------------------------------------------------
     def history_read(self):
-        [i.history_read_file() for i in self.muscle_groups]
+        #[i.history_read_file() for i in self.muscle_groups]
+        muscle.history_read_file(self.muscle_groups)
 #        #check for consistency
-#         name_first=self.muscle_groups[0].name
+#         name_first=self.muscle_groups[0].idx
 #         len_first=len(self.muscle_groups[0].history)
 #         for i in range(1,len(self.muscle_groups),1):
 #             len_cur=len(self.muscle_groups[i].history)
 #             if len_first!=len_cur:
-#                 print("Malformed History: Unmatching lenghts. History of muscle \"%s\" is of different length (%d) than of muscle \"%s\" (%d)"%(name_first,len_first,self.muscle_groups[i].name,len_cur))
-        [i.history_prepare_shortened(self.workouts_perWeek) for i in self.muscle_groups]
+#                 print("Malformed History: Unmatching lenghts. History of muscle \"%s\" is of different length (%d) than of muscle \"%s\" (%d)"%(name_first,len_first,self.muscle_groups[i].idx,len_cur))
+        muscle.history_prepare_shortened_all(self.muscle_groups,self.workouts_perWeek)
+        exercise.history_read_file(self.exercises,self.exercises_excluded)
+        exercise.history_prepare_shortened_all(self.exercises,self.workouts_perWeek)
+        exercise.history_prepare_shortened_all(self.exercises_excluded,self.workouts_perWeek)
     def history_write(self):
-        [i.history_write_file() for i in self.muscle_groups]
+        #[i.history_write_file() for i in self.muscle_groups]
+        muscle.history_write_file(self.muscle_groups)
+        exercise.history_write_file(self.exercises,self.exercises_excluded)
     def history_write_userQuery(self):
         inputtry=0
         while 1:
@@ -416,8 +203,11 @@ class workout(object):
                 else:
                     print(" Try again.«\n")
     def push_schedule_toHistory(self):
-        [i.history_push_schedule() for i in self.muscle_groups]
-        [i.history_prepare_shortened(self.workouts_perWeek) for i in self.muscle_groups]
+        muscle.history_push_schedule_all(self.muscle_groups)
+        #muscle.history_prepare_shortened_all(self.muscle_groups,self.workouts_perWeek)
+        exercise.history_push_schedule_all(self.exercises)
+        exercise.history_push_schedule_all(self.exercises_excluded)
+        #exercise.history_prepare_shortened_all(self.exercises,self.workouts_perWeek)
     #------------------------------------------------------------------------------------------
     def debug_print_muscles(self,lst,indiv_muscle_c):
         print("Debug - Muscles: (Counter: %d)"%(indiv_muscle_c))
@@ -454,26 +244,34 @@ class workout(object):
             print("%s:%2.2f, "%(self.muscle_groups[i].name,self.muscle_groups[i].credit),end='')
         print("%s:%2.2f"%(self.muscle_groups[len(self.muscle_groups)-1].name,self.muscle_groups[len(self.muscle_groups)-1].credit),end='')
         print(" ]")
-    def debug_print_credits_workingSet(self):
+    def debug_print_credits_workingSet_generic(self,trgtArray):
         cr_ave=0
-        for i in range(0,len(self.muscle_groups),1):
-            cr_ave+=self.muscle_groups[i].credit
-        cr_ave/=len(self.muscle_groups)
+        for i in range(0,len(trgtArray),1):
+            cr_ave+=trgtArray[i].credit
+        cr_ave/=len(trgtArray)
         print("WorkingSet[Cred] (Ave %2.2f): [ "%(cr_ave),end='')
-        for i in range(0,len(self.muscle_workingSet)-1,1):
-            print("%s:%2.2f, "%(self.muscle_workingSet[i].name,self.muscle_workingSet[i].credit),end='')
-        print("%s:%2.2f"%(self.muscle_workingSet[len(self.muscle_workingSet)-1].name,self.muscle_workingSet[len(self.muscle_workingSet)-1].credit),end='')
+        for i in range(0,len(trgtArray)-1,1):
+            print("%s:%2.2f, "%(trgtArray[i].name,trgtArray[i].credit),end='')
+        print("%s:%2.2f"%(trgtArray[len(trgtArray)-1].name,trgtArray[len(trgtArray)-1].credit),end='')
         print(" ]")
-    def debug_print_urgency_workingSet(self):
+    def debug_print_credits_workingSet_muscle(self):
+        self.debug_print_credits_workingSet_generic(self.muscle_workingSet)
+    def debug_print_credits_workingSet_exercise(self):
+        self.debug_print_credits_workingSet_generic(self.exercise_workingSet)
+    def debug_print_urgency_workingSet_generic(self,trgtArray):
         urg_ave=0
-        for i in range(0,len(self.muscle_groups),1):
-            urg_ave+=self.muscle_groups[i].urgency
-        urg_ave/=len(self.muscle_groups)
+        for i in range(0,len(trgtArray),1):
+            urg_ave+=trgtArray[i].urgency
+        urg_ave/=len(trgtArray)
         print("WorkingSet[Urg] (Ave %2.2f): [ "%(urg_ave),end='')
-        for i in range(0,len(self.muscle_workingSet)-1,1):
-            print("%s:%2.2f, "%(self.muscle_workingSet[i].name,self.muscle_workingSet[i].urgency),end='')
-        print("%s:%2.2f"%(self.muscle_workingSet[len(self.muscle_workingSet)-1].name,self.muscle_workingSet[len(self.muscle_workingSet)-1].urgency),end='')
+        for i in range(0,len(trgtArray)-1,1):
+            print("%s:%2.2f, "%(trgtArray[i].name,trgtArray[i].urgency),end='')
+        print("%s:%2.2f"%(trgtArray[len(trgtArray)-1].name,trgtArray[len(trgtArray)-1].urgency),end='')
         print(" ]")
+    def debug_print_urgency_workingSet_muscle(self):
+        self.debug_print_urgency_workingSet_generic(self.muscle_workingSet)
+    def debug_print_urgency_workingSet_exercise(self):
+        self.debug_print_urgency_workingSet_generic(self.exercise_workingSet)
     def debug_print_muscleList(self,mlst):
         lstlen=len(mlst)
         i=0
@@ -493,12 +291,14 @@ class workout(object):
         inputtry=0
         while 1:
             print("»History Files Trimming called. Shall I proceed?«")
+            print("    (Continue: y / yes / ja / j / 1)")
+            print("    (Abort: n / no / nein / 0)")
             inp=input()
             if inp=="y" or inp=="yes" or inp=="ja" or inp=="j" or inp=="1":
                 print("-> »Trimming History«")
                 self.history_trim_trimFiles()
                 return True
-            elif inp=="n" or inp=="no" or inp=="nein" or inp=="n" or inp=="0":
+            elif inp=="n" or inp=="no" or inp=="nein" or inp=="0":
                 print("-> »NOT Trimming History«")
                 return False
             else:
@@ -509,66 +309,128 @@ class workout(object):
                     return False
                 else:
                     print(" Try again.«\n")
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def __history_show_WorkoutSchedule_element_generic_reverse(self,exeList,index,chosenList):
+        #index+=1#Because when using it subtractive to access the entries in reverse order, one would actually have to use 'len(List)-1'. With this increment here, this is done for
+        #  ^^ But that's already assured by how the function is driven by its wrapper
+        scheduled_exe=[]
+        scheduled_mus=[]
+        for iexercise in exeList:
+            iList=getattr(iexercise,chosenList)
+            if len(iList)>=index:
+                if 0<iList[len(iList)-index]:
+                    scheduled_exe.append(iexercise)
+        for imuscle in self.muscle_groups:
+            iList=getattr(imuscle,chosenList)
+            if len(iList)>=index:
+                if 0<iList[len(iList)-index]:
+                    scheduled_mus.append(imuscle)
+        #
+        leftEnt=len(scheduled_exe)
+        while 0<leftEnt:
+            iexercise=scheduled_exe[0]
+            iList=getattr(iexercise,chosenList)
+            exeForThisMus=[]
+            exeForThisMus.append((0,iexercise))
+            for j in range(1, len(scheduled_exe)):
+                jexercise=scheduled_exe[j]
+                jList=getattr(jexercise,chosenList)
+                if iList[len(iList)-index]==jList[len(jList)-index]:
+                    exeForThisMus.append((j,jexercise))
+            for imuscle in scheduled_mus:
+                if iList[len(iList)-index]==imuscle.idx:
+                    print("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
+                    if 1<len(exeForThisMus):
+                        print(" ",end="")
+                        for i in range(1,len(exeForThisMus),1):
+                            print("  >& %s"%(exeForThisMus[i][1].name),end="")
+                        print("")
+            for j in range(len(exeForThisMus)-1,-1,-1):
+                scheduled_exe.pop(exeForThisMus[j][0])
+                leftEnt-=1
+    def _history_show_previousWorkoutSchedule_element(self,exeList,index):
+        print("===============")
+        print("== Workout t-%d"%(index))
+        print("---------------")
+        self.__history_show_WorkoutSchedule_element_generic_reverse(exeList,index,"history_shortened")
+        print("")
     def history_show_previousWorkoutSchedule(self):
         #TODO
-        lenTotalMax=0
+        exeList=self.exercises+self.exercises_excluded
+        lenMax=0
         i=0
-        while i<len(self.muscle_groups):
-            lenTotalMax=max(lenTotalMax,len(self.muscle_groups[i].history_shortened))
+        while i<len(exeList):
+            lenMax=max(lenMax,len(exeList[i].history_shortened))
             i+=1
-        lenTotalMax=min(lenTotalMax,self.workouts_perWeek*2)
+        
+        numOutput=int(self.workouts_perWeek*2)
+        numOutput=min(numOutput,lenMax)
 
         print("######################")
         print("# Previous Workouts: #")
-        i=lenTotalMax
-        while i>0:
-            print("===============")
-            print("== Workout t-%d"%(i))
-            print("---------------")
-            for j in range(0,len(self.muscle_groups),1):
-                if len(self.muscle_groups[j].history_shortened)>=lenTotalMax:
-                    if self.muscle_groups[j].history_shortened[lenTotalMax-i]==1:
-                        print(self.muscle_groups[j].name)
-            print("")
+        i=numOutput
+        while i>=1:
+            self._history_show_previousWorkoutSchedule_element(exeList,i)
             i-=1
-
         print("#########################################")
         print("#########################################")
         print("#########################################\n")
         pass
+    def _history_show_computedWorkoutSchedule_element(self,index):
+        scheduled_exe=[]
+        scheduled_mus=[]
+        for iexercise in self.exercises:
+            if 0<iexercise.schedule[index]:
+                scheduled_exe.append(iexercise)
+        for imuscle in self.muscle_groups:
+            if 0<imuscle.schedule[index]:
+                scheduled_mus.append(imuscle)
+        print("===============")
+        #print("== Workout %d"%(i+1))
+        print("== DotW, 2023-MM-DD")
+        print("---------------")
+        leftEnt=len(scheduled_exe)
+        while 0<leftEnt:
+            iexercise=scheduled_exe[0]
+            exeForThisMus=[]
+            exeForThisMus.append((0,iexercise))
+            for j in range(1, len(scheduled_exe)):
+                jexercise=scheduled_exe[j]
+                if jexercise.schedule[index]==iexercise.schedule[index]:
+                    exeForThisMus.append((j,jexercise))
+            for imuscle in scheduled_mus:
+                if iexercise.schedule[index]==imuscle.idx:
+                    print("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
+                    if 1<len(exeForThisMus):
+                        print(" ",end="")
+                        for i in range(1,len(exeForThisMus),1):
+                            print("  >& %s"%(exeForThisMus[i][1].name),end="")
+                        print("")
+            for j in range(len(exeForThisMus)-1,-1,-1):
+                scheduled_exe.pop(exeForThisMus[j][0])
+                leftEnt-=1
+        print("\n")
     def history_show_computedWorkoutSchedule(self,upcomingOutput_Reverse):
         print("######################")
-        print("# Computed Schedule: #")
-        if upcomingOutput_Reverse==0:
+        print("# Computed Schedule: #  (Reverse-Output: %s)"%(upcomingOutput_Reverse))
+        if not upcomingOutput_Reverse:
             i=0
             while i<len(self.muscle_groups[0].schedule):
-                print("===============")
-                #print("== Workout %d"%(i+1))
-                print("== DotW, 2023-MM-DD")
-                print("---------------")
-                for j in range(0,len(self.muscle_groups),1):
-                    if self.muscle_groups[j].schedule[i]==1:
-                        print(self.muscle_groups[j].name)
-                print("\n")
+                self._history_show_computedWorkoutSchedule_element(i)
                 i+=1
-        elif upcomingOutput_Reverse==1:
+        elif upcomingOutput_Reverse:
             i=len(self.muscle_groups[0].schedule)-1
             while i>=0:
-                print("===============")
-                #print("== Workout %d"%(i+1))
-                print("== DotW, 2023-MM-DD")
-                print("---------------")
-                for j in range(0,len(self.muscle_groups),1):
-                    if self.muscle_groups[j].schedule[i]==1:
-                        print(self.muscle_groups[j].name)
-                print("\n")
+                self._history_show_computedWorkoutSchedule_element(i)
                 i-=1
         else:
             print("Invalid Value given for \"upcomingOutput_Reverse\"")
     #------------------------------------------------------------------------------------------
     def muscles_analyse_history(self):
-        [i.derive_credit_fromHistory(self.credit_center) for i in self.muscle_groups]
-        [i.derive_urgency(self.credit_center,self.workouts_perWeek) for i in self.muscle_groups]
+        muscle.derive_credit_fromHistory_all(self.muscle_groups,self.credit_center)
+        muscle.derive_urgency_array(self.muscle_groups,self.credit_center,self.workouts_perWeek)
+        exercise.derive_credit_fromHistory_all(self.exercises,self.credit_center)
+        exercise.derive_urgency_array(self.exercises,self.credit_center,self.workouts_perWeek)
     def muscles_analyse_urgency(self):
         #First, init the workingSet, later on we work on that
         self.muscle_workingSet=[]
@@ -579,8 +441,32 @@ class workout(object):
             i+=1
         #order after credit
         self.muscle_workingSet.sort(key=lambda x: x.urgency, reverse=True)
+        #Give these entries with the same urgency a random shuffle among them.
+        # Group the sublists based on their first element
+        groups=[list(g) for _, g in groupby(self.muscle_workingSet, lambda x: x.urgency)]
+        # Shuffle each group randomly
+        for group in groups:
+            random.shuffle(group)
+        # Concatenate the shuffled groups back into a single list
+        self.muscle_workingSet=[item for group in groups for item in group]
+        #
         #ToDo: A proper Value / Calculation for the precedence_tolerance
         self.bigMuscle_precedence_tolerance=0.29
+        #
+        self.exercise_workingSet=[]
+        exeNum=len(self.exercises)
+        i=0
+        while i<exeNum:
+            self.exercise_workingSet.append(self.exercises[i])
+            i+=1
+        self.exercise_workingSet.sort(key=lambda x: x.urgency, reverse=True)
+        #Shuffle
+        groups=[list(g) for _, g in groupby(self.exercise_workingSet, lambda x: x.urgency)]
+        # Shuffle each group randomly
+        for group in groups:
+            random.shuffle(group)
+        # Concatenate the shuffled groups back into a single list
+        self.exercise_workingSet=[item for group in groups for item in group]
     def muscles_assure_rest(self):
         #ToDo: Use the workouts per Week to determine the number of days between workouts or introduce an additional parameter for this (detailed workout spread across days) to make sure that a muscle has 48-72 h of rest
         #move muscles with no preceeding rest (i.e. was trained last workout) to the end of the list
@@ -599,7 +485,7 @@ class workout(object):
         #is_supset=0
         for i in range(0,len(self.supersets)):
             for j in range(0,2):
-                if muscle.name==self.supersets[i][j]:
+                if muscle.idx==self.supersets[i][j]:
                     return (True,i,j)
         return (False,0,0)
     def workoutArrange_optimization_urgencyAdjust(self,picked_pre,indiv_muscle_c):
@@ -714,17 +600,17 @@ class workout(object):
                 picked.sort(key=lambda x: x.urgency, reverse=True)
                 remove=""
                 for i in range(0,len(self.supersets)):
-                    if picked[len(picked)-1].name==self.supersets[i][0]:
+                    if picked[len(picked)-1].idx==self.supersets[i][0]:
                         remove=self.superset[i][1]
                         break
-                    elif picked[len(picked)-1].name==self.supersets[i][1]:
+                    elif picked[len(picked)-1].idx==self.supersets[i][1]:
                         remove=self.superset[i][0]
                         break
                 picked.pop(len(picked)-1)
                 i=0
                 while i<len(picked):
                 #for i in range(0,len(picked)):
-                    if remove==picked[i].name:
+                    if remove==picked[i].idx:
                         picked.pop(i)
                         break
                     i+=1
@@ -732,7 +618,7 @@ class workout(object):
                 #remove, until countDiff==0
                 picked_pre.sort(key=lambda x: x.urgency, reverse=True)
 #                 for l in range(0,len(picked)):
-#                     print("picked: %s"%(picked[l].name))
+#                     print("picked: %s"%(picked[l].idx))
                 while countDiff>0:
                     if countDiff==1:
                         #Try to remove no superset, if a single exercise does not have a credit very much higher
@@ -743,7 +629,7 @@ class workout(object):
                         else:
                             i=len(picked_pre)-2
                             while i>=0:
-                                #print("test %s"%(picked_pre[i].name))
+                                #print("test %s"%(picked_pre[i].idx))
                                 if picked_pre[i].credit>=1+picked_pre[i].malus:#ToDo: Check Credit vs. Urgency
                                     supset_check=self._is_supersetMuscle(picked_pre[i])
                                     if not supset_check[0]:
@@ -767,7 +653,7 @@ class workout(object):
                                 j=0
                                 while j<len(picked_pre):
                                 #for j in range(0,len(picked_pre)):
-                                    if remove==picked_pre[j].name:
+                                    if remove==picked_pre[j].idx:
                                         picked_pre.pop(j)
                                         countDiff-=1
                                         break
@@ -788,7 +674,7 @@ class workout(object):
                             j=0
                             while j<len(picked_pre):
                             #for j in range(0,len(picked_pre)):
-                                if remove==picked_pre[j].name:
+                                if remove==picked_pre[j].idx:
                                     picked_pre.pop(j)
                                     countDiff-=1
                                     break
@@ -813,9 +699,9 @@ class workout(object):
                 if onlySupset==1:
                     break
             return (picked,indiv_muscle_c)
-    def _muscle_reappend(self,musnam):
+    def _muscle_reappend(self,musIdx):
         for i in range(0,len(self.muscle_workingSet)):
-            if self.muscle_workingSet[i].name==musnam:
+            if self.muscle_workingSet[i].idx==musIdx:
                 self.muscle_workingSet.append(self.muscle_workingSet.pop(i))
     def workoutArrange_optimization_smoothen(self,picked_pre,indiv_muscle_c):
         #no delt_rear with rotator_cuff. Precedence to rotator_cuff
@@ -829,47 +715,47 @@ class workout(object):
         
         i=len(picked)-1
         while i>=0:
-            if picked[i].name=="rotator_cuff":
+            if picked[i].idx==muscleIdentifier.rotator_cuff.value[0]:
                 j=len(picked)-1
                 while j>=0:
-                    if picked[j].name=="delt_rear":
+                    if picked[j].idx==muscleIdentifier.delt_rear.value[0]:
                         replace+=1
-                        self._muscle_reappend(picked[j].name)
+                        self._muscle_reappend(picked[j].idx)
                         picked.pop(j)
                         if j<i:
                             i-=1
                         break
                     j-=1
-            elif picked[i].name=="delt_side":
+            elif picked[i].idx==muscleIdentifier.delt_side.value[0]:
                 j=len(picked)-1
                 while j>=0:
-#                     if picked[j].name=="delt_front":
+#                     if picked[j].idx=="delt_front":
 #                         replace+=1
-#                         self._muscle_reappend(picked[j].name)
+#                         self._muscle_reappend(picked[j].idx)
 #                         picked.pop(j)
 #                         if j<i:
 #                             i-=1
 #                         continue
-                    if picked[j].name=="delt_rear":
+                    if picked[j].idx==muscleIdentifier.delt_rear.value[0]:
                         replace+=1
-                        self._muscle_reappend(picked[j].name)
+                        self._muscle_reappend(picked[j].idx)
                         picked.pop(j)
                         if j<i:
                             i-=1
                         break#continue
                     j-=1
-            elif picked[i].name=="lower_back":
+            elif picked[i].idx==muscleIdentifier.lower_back.value[0]:
                 j=len(picked)-1
                 while j>=0:
-                    if picked[j].name=="quads & glutes":#This assumes that quads and glutes can only occur together. Thus it only checks for one
+                    if picked[j].idx==muscleIdentifier.quads_n_glutes.value[0]:#This assumes that quads and glutes can only occur together. Thus it only checks for one
                         replace+=1
                         if picked[j].urgency<picked[i].urgency:
-                            self._muscle_reappend(picked[j].name)
+                            self._muscle_reappend(picked[j].idx)
                             picked.pop(j)
                             if j<i:
                                 i-=1
                         else:
-                            self._muscle_reappend(picked[i].name)
+                            self._muscle_reappend(picked[i].idx)
                             picked.pop(i)
                         break
                     j-=1
@@ -915,12 +801,12 @@ class workout(object):
             pre_len=len(picked_pre)
             i=0
             while i<pre_len:
-                if picked_pre[i].name==self.supersets[j][0]:
+                if picked_pre[i].idx==self.supersets[j][0]:
                     set_count+=1
                     set_found=0
                     picked.append(picked_pre.pop(i))
                     pre_len-=1
-                elif picked_pre[i].name==self.supersets[j][1]:
+                elif picked_pre[i].idx==self.supersets[j][1]:
                     set_count+=1
                     set_found=1
                     picked.append(picked_pre.pop(i))
@@ -931,11 +817,11 @@ class workout(object):
                 added_new+=1
                 if set_found==0:
                     for i in range(0,len(self.muscle_workingSet),1):
-                        if self.muscle_workingSet[i].name==self.supersets[j][1]:
+                        if self.muscle_workingSet[i].idx==self.supersets[j][1]:
                             picked.append(self.muscle_workingSet[i])
                 elif set_found==1:
                     for i in range(0,len(self.muscle_workingSet),1):
-                        if self.muscle_workingSet[i].name==self.supersets[j][0]:
+                        if self.muscle_workingSet[i].idx==self.supersets[j][0]:
                             picked.append(self.muscle_workingSet[i])
             #elif set_count==2:
                 #done. nothing more to do. superset already fully included
@@ -944,10 +830,10 @@ class workout(object):
             set_count=0
             set_found=2
 #         for k in range(0,len(picked),1):
-#             print(picked[k].name)
+#             print(picked[k].idx)
 #         print("")
 #         for k in range(0,len(picked_pre),1):
-#             print(picked_pre[k].name)
+#             print(picked_pre[k].idx)
         if added_new==0:
             #copy over all the rest
             #i=0
@@ -1010,7 +896,7 @@ class workout(object):
                         picked.append(self.muscle_workingSet[j])
                         picked_big+=1
                         #print("tolerance %f"%(self.bigMuscle_precedence_tolerance))
-                        #print("adding precedence %s"%(self.muscle_workingSet[j].name))
+                        #print("adding precedence %s"%(self.muscle_workingSet[j].idx))
                 if picked_big>=2:
                     break
             #misuse "picked_big" as a counter for "picked_total"
@@ -1044,15 +930,90 @@ class workout(object):
         (picked,indiv_muscle_c)=self.workoutArrange_optimization_urgencyAdjust(picked,indiv_muscle_c)
         #make sure that no odd combination of the Deltoids arise, try to combine antagonizing muscles, ...
         (picked,indiv_muscle_c)=self.workoutArrange_optimization_smoothen(picked,indiv_muscle_c)
-        #update future history aka schedule
-        i=0
-        while i<len(picked):
-        #for i in range(0,len(picked),1):
-            picked[i].schedule.append(1)
-            i+=1
+        #
+        #Now assign exercises to the picked muscles
+        #-> Herein, both the schedule for the picked muscles and the exercises are updated
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        def _updateSchedule_wMatchingExe(matchMuscle,exei,matchingExe):
+            matchingExe.schedule.append(matchMuscle.idx)
+            #Match all entries of the exercises Intensity-List to the corresponding muscle
+            for jintensity in matchingExe.muscleIntensity:
+                for jmuscle in self.muscle_groups:
+                    if jmuscle.idx==jintensity[0]:
+                        if len(jmuscle.schedule)<iteration:
+                            jmuscle.schedule.append(jintensity[1])
+                        else:
+                            jmuscle.schedule[iteration-1]+=jintensity[1]#iteration==len(jmuscle.schedule)
+            #pickedExe.append(matchingExe)
+            self.exercise_workingSet.pop(exei)
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        def _ordinary_pick_firstExercise(matchMuscle):
+            next_muscle=False
+            for exei, iexercise in enumerate(self.exercise_workingSet):
+                for iintensity in iexercise.muscleIntensity:
+                    if iintensity[0]==matchMuscle.idx:
+                        if iintensity[1]>=exercise.servingThreshold:# (len(imuscle.schedule)<iteration or imuscle.schedule[iteration-1]<exercise.minimumServing*2/3)
+                            _updateSchedule_wMatchingExe(matchMuscle,exei,iexercise)
+                            next_muscle=True
+                        break
+                if next_muscle:
+                    break
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        musclesToIntensify=picked[:]
+        #pickedExe=[]
+        for imuscle in musclesToIntensify:
+            _ordinary_pick_firstExercise(imuscle)
+        #Add exercises for muscles below minimumServing until exceeded
+        while True:
+            for index, jmuscle in enumerate(musclesToIntensify):
+                if jmuscle.schedule[iteration-1]>exercise.minimumServing:
+                    musclesToIntensify.pop(index)
+            if 0>=len(musclesToIntensify):
+                break
+            for imuscle in musclesToIntensify:
+                if len(imuscle.schedule)>=iteration and imuscle.schedule[iteration-1]>exercise.minimumServing:#Unlikely, but accumulated small servings of exercises picked for preceding muscles could already exceed the minimumServing
+                    continue
+                #For every muscle still in the set, here we are now definitively servingThreshold < x <= minimumServing
+                #  Try to find an exercise that both brings it close to 1 and does not come too far down in the urgency-sorting
+                if imuscle.schedule[iteration-1]<exercise.servingThreshold+0.55*(exercise.minimumServing-exercise.servingThreshold):
+                    _ordinary_pick_firstExercise(imuscle)
+                else:
+                    muscleBoundary=0.5*exercise.muscleStats[imuscle.idx]['count']
+                    muscleBoundary=max(muscleBoundary,1)
+                    muscleBoundary=min(muscleBoundary,4)
+                    foundMatching=0
+                    bestDelta=100#Just to have something high
+                    for exei, iexercise in enumerate(self.exercise_workingSet):
+                        for iintensity in iexercise.muscleIntensity:
+                            if iintensity[0]==imuscle.idx:
+                                if iintensity[1]>=exercise.servingThreshold:
+                                    wouldResult=imuscle.schedule[iteration-1]+iintensity[1]
+                                    desiredTargetDelta=0.5*(1-exercise.minimumServing)
+                                    if wouldResult>1-desiredTargetDelta and wouldResult<1+desiredTargetDelta:
+                                        foundMatching=1
+                                        newDelta=abs(1-wouldResult)
+                                        if newDelta<bestDelta:
+                                            bestDelta=newDelta
+                                            bestMatch=(exei, iexercise)
+                                    muscleBoundary-=1
+                                break
+                        if 0>=muscleBoundary:
+                            break
+                    if foundMatching:
+                        _updateSchedule_wMatchingExe(imuscle,bestMatch[0],bestMatch[1])
+                    else:
+                        _ordinary_pick_firstExercise(imuscle)
+        #
+        #update future history aka schedule for remaining muscles and exercises
         for i in range(0,len(self.muscle_groups),1):#Just a Note: Here it is intentionally 'muscle_groups' and not 'only the workingSet'
             if len(self.muscle_groups[i].schedule)<iteration:
                 self.muscle_groups[i].schedule.append(0)
+        for iexercise in self.exercise_workingSet:
+            if len(iexercise.schedule)<iteration:
+                iexercise.schedule.append(0)
+        for iexercise in self.exercises_excluded:
+            if len(iexercise.schedule)<iteration:
+                iexercise.schedule.append(0)
     def compute_workoutSchedule_nextWorkout(self,iteration):
         self.muscles_analyse_history()
         self.muscles_analyse_urgency()
@@ -1104,7 +1065,6 @@ def DenKr_workoutScheduler_Main():
     #A muscle shall have a "credit" higher than 2. It looses its malus every workout it is not trained and gains +1 for every time it is trained
     
     #TODO Extension: One could check (inside smoothening or urgencyAdjust or assureRest or at general picking) for severe overtraining. See whether an included muscles credit would land double the bonus over the centerCredit. But this case shouldn't really arise in the current approach (by the numMusclePerWorkout calculation and the restricted history analysis)
-    upcomingOutput_Reverse=1
     work=workout()
     work.workoutScheduling_main(upcomingOutput_Reverse)
     
@@ -1125,11 +1085,12 @@ def main_variant1():
     #Optional, eher nicht: Add Scale_Up & Scale_Down again. Mag Sinn ergeben, um die Credits besser auszuglätten. Vielleicht aufeinander bezogen -> Wenn einmal up-scaled wurde den threshold verringern, welcher die kommenden Workouts down_scaled. Damit mag sich ergeben, dass ein workout mal ein (oder zwei) Muskeln mehr trainiert, wenn sie dringend anliegen und man dann ein kommendes Workout etwas kürzer gestalten kann. (Kann einerseits sinnvoll sein, um solche Muskelgruppen nicht zu lange zu pausieren und dann zu schnell aufeinander zwei Mal trainiert. Ist aber andererseits auch wieder dämlich, weil dann einzelne Workouts zu lang werden, was schlecht für das Testo-Level ist...)
     err=0  # @UnusedVariable
     #print("Call it with Python 3.7 or higher! This requires order-preserving dictionaries.")
-    print("DenKr_workoutScheduler (v. beta 0.2)")
-    print(" (Path of Script: %s) [Here, the History is stored]"%(progPath))
+    print("DenKr_workoutScheduler (v. %s)"%(VersionInfo.VERSION_DESCRIPTION))
+    print(" (Path of Script: %s) [Here, the History is stored]"%(global_variables.progPath))
     print("")
     print("It calculates a progressing schedule for your resistance-training workout, i.e. tells you in which order you may train your muscle-groups.")
-    print("In the defined class \"workout\" you may define your demands. That is, how many workouts you intend to do per week and how often per week individual muscles shall be attacked. The default should provide a solid setup for most people up to advanced. However, if you are very advanced you may need to adjust the volume and for sure your total workouts per week.")
+    print("In the files \"./_1cfg/configuration.py\" & \"./_1cfg/setup.py\" you may define your demands. That is, how many workouts you intend to do per week and how often per week individual muscles shall be attacked; as well as which types of exercises you want (in terms of required equipment) or the individual exercises themselves.")
+    print("The default should provide a solid setup for most people up to advanced. However, if you are very advanced you may need to adjust the volume and for sure your total workouts per week.")
     print("The tool stores the calculated schedule as a history in text-files and loads them during a run, to maintain a consistant suitable flow. After startup you are first told (again) the last loaded workouts, then the new ones are presented on the terminal.")
     print("Before writing the history (i.e. appending the newly computed workouts), you are prompted a query on the console whether the persistent history files shall be updated or not. You can use this to just lookup the last preceding computation without creating a new one and unintentionally messing with the history files.")
     print("\n--------------------------------\n")
@@ -1142,9 +1103,17 @@ def main_variant1():
     print("Another Tipp: In times, when you are proposed a smaller workout - only 3 muscles or so - you may want to fill the hole with something beneficial instead of just stopping the workout early. Fill in an additional session of facepulls for example. Do some external rotation exercise. Hit some back shoulder / back muscles, which could use some additional training. Do some isolated lower-back movement, like bend down to hyper-extension. There's always something to do.")
     print("")
     print("Reverse Output:")
-    print("Watch out for the Variable 'upcomingOutput_Reverse' inside the function 'DenKr_workoutScheduler_Main()'.")
+    print("Watch out for the Variable 'upcomingOutput_Reverse' inside the file './1cfg/configuration.py'.")
     print("Set this to '0' to print out the computed Workout-Schedule with rising number (Starting with Workout-1, going up to Workout-n).")
     print("Set it to '1' to print the Schedule 'reverse', i.e. with falling number (Starting with Workout-n, going down to Workout-1).")
+    print("")
+    print("Workout-Notation:")
+    print("• When 'one exercise' is denotet in the form of actually two exercises, joined by \"->\", this specifies a \"Compund-Superset\".")
+    print("  This means: Perform both exercises in direct succession without any break. You may give the first exercise like 60-80% of your power and finish off with the second; or perform the first nearly up to exhaustion and then use the second to finish towards nearly failure.")
+    print("• You may also be proposed multiple distinct exercises. Denoted as \">&\". This happens, when a muscle shall be trained in the workout but the primarily picked exercise does not bring sufficient intensity. Then additional exercises are added.")
+    print("  So you do all exercises, but more separated and not as rapid Superset. (Albeit doing as Superset would actually also be fine...)")
+    print("")
+    print("")
     err=DenKr_workoutScheduler_Main()
     return err
 #------------------------------------------------------------------------------------------
@@ -1239,7 +1208,6 @@ def cmdLine_Mux__errHandling(argc,argv):
 
 #------------------------------------------------------------------------------------------
 
-
 def main(argc,argv):
     SET_ansi_escape_use()
     #printansi(ansi_blue,"""I can even use colors!\n""")
@@ -1258,17 +1226,8 @@ if __name__ == '__main__':
     argc = len(sys.argv)-1
     argv=sys.argv[1:]
     # - - - - - - - - -
-    global progPath
+    #global progPath # Declared in ./settings/global_variables and importet
     #print('sys.argv[0] =', sys.argv[0])
-    #progPath = os.path.dirname(sys.argv[0])
-    #print('path =', progPath)
-    #print('full path =', os.path.abspath(progPath))
-    #progPath = os.path.realpath(__file__)
-    #print('realpath = ', progPath)
-    #progPath = os.path.dirname(progPath)
-    #print('realpath = ', progPath)
-    progPath = os.path.realpath(__file__)
-    progPath = os.path.dirname(progPath)
-    #print('Path of Script: ', progPath)
+    global_variables.set_ProgramPath(__file__)
     # - - - - - - - - -
     main(argc,argv)
