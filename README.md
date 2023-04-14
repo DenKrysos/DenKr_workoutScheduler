@@ -33,6 +33,8 @@ Pass these as Command-Line Arguments to let it perform special functions
 
 ### History Trimming Functionality
 
+> *Upfront-Notice*: There's actually no necessity to call this explicity. The tool checks the size of history-logs and in case they become too long, automatically trims the files after creating a backup of the prior.
+
 Trims the History-Files down to the number of entries that are required for the Script to compute the schedule, that is, to derive the weight from the historical previous workouts, which decides about the upcoming order.
 (Respectively keeps the existing entries, i.e. changes nothing, in case the history files do not contain more than these.)
 

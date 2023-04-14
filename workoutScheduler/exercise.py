@@ -8,15 +8,20 @@ Created on 2023-04-09
 '''
 
 
+## Some Fundamentals
+import package.importMe_fundamental  # @UnusedImport
+
 
 ## System Packages
 # import math
 from builtins import object
 
 
+
+
 ##Workout-Scheduler Packages
 from commonFeatures.common_muscle_exercise import CommonMuscleExercise
-from muscle import muscle
+from workoutScheduler.muscle import muscle
 
 
 ##Fundamental Project Settings
@@ -130,7 +135,7 @@ class exercise(object):
             excludedArr.append(toAdd)
     @classmethod
     def set_exercises(cls,trgtArr,excludedArr):
-        for index, (ident, precedence, equip, muscle, enabled) in enumerate(exercise_setup):
+        for index, (ident, enabled, precedence, equip, muscle) in enumerate(exercise_setup):
             cls._add_exercise(trgtArr,excludedArr,index,ident,precedence,equip,muscle,enabled)
         for i in range(0,len(trgtArr)):
             trgtArr[i]._calc_exe_malus_bonus()
@@ -144,6 +149,9 @@ class exercise(object):
     @classmethod
     def history_write_file(cls,exerciseArray,excludedArray):
         CommonMuscleExercise.history_write_file(exerciseArray+excludedArray, history_file_prefix_exercise, history_file_fname_exercise, history_file_fExt)
+    @classmethod
+    def history_trim_file(cls,exerciseArray,excludedArray):
+        CommonMuscleExercise.history_trim_file(exerciseArray+excludedArray, history_file_prefix_exercise, history_file_fname_exercise, history_file_fExt)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def history_prepare_shortened(self,workouts_perWeek):
         #derive the credit over 4 weeks

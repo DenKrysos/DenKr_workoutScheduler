@@ -9,14 +9,20 @@ Last modified: 2023-04-09
 '''
 
 
+## Some Fundamentals
+import package.importMe_fundamental  # @UnusedImport
+
 
 ## System Packages
 # import math
 from builtins import object
 
 
+
+
 ##DenKr Packages
 from auxiliary.filesystem import file_json_write, file_json_read_singleArray
+
 
 ##Workout-Scheduler Packages
 from commonFeatures.common_muscle_exercise import CommonMuscleExercise
@@ -121,6 +127,9 @@ class muscle(object):
     @classmethod
     def history_write_file(cls,muscleArray):
         CommonMuscleExercise.history_write_file(muscleArray, history_file_prefix_muscle, history_file_fname_muscle, history_file_fExt)
+    @classmethod
+    def history_trim_file(cls,muscleArray):
+        CommonMuscleExercise.history_trim_file(muscleArray, history_file_prefix_muscle, history_file_fname_muscle, history_file_fExt)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def history_prepare_shortened(self,workouts_perWeek):
         #derive the credit over 2 weeks

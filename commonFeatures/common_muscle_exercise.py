@@ -8,8 +8,13 @@ Last modified: 2023-04-10
 @author: Dennis Krummacker
 '''
 
+
+## Some Fundamentals
+import package.importMe_fundamental  # @UnusedImport
+
+
 ##DenKr Packages
-from auxiliary.filesystem import file_json_write, file_json_read
+from auxiliary.filesystem import file_json_write, file_json_read, file_backup_asMove
 
 
 class CommonMuscleExercise:
@@ -29,6 +34,12 @@ class CommonMuscleExercise:
         for i in range(len(trgtArray)):
             jsonData[trgtArray[i].name]=trgtArray[i].history
         file_json_write(fName, jsonData)
+    @classmethod
+    def history_trim_file(cls,trgtArray,fName_prefix,fName,fName_ext):
+        for x in trgtArray:
+            x.history=x.history_shortened[:]
+        file_backup_asMove(fName_prefix+fName,fName_ext)
+        cls.history_write_file(trgtArray,fName_prefix,fName,fName_ext)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     @classmethod
     def history_prepare_shortened(cls,target,toLoad):
