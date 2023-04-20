@@ -10,17 +10,27 @@ Created on 2020-11-18
 
 import os
 
+
+from DenKr_essentials_py.DenKr_terminal import DKTerminal
+
+
+
+
 progPath=None
 
+# "Human-Computer-Interface". Handles, where output is going and input is taken from
+HCI=DKTerminal()
 
-'''
-Usage:
-- import the whole module (not single elements). Afterwards access it everything as global_variables.x
-from settings import global_variables
-- Call this function giving it the main file's __file__ as argument, preferably just inside the main-file:
-global_variables.set_ProgramPath(__file__)
-'''
+
 def set_ProgramPath(mainFile__file__):
+    '''
+    Usage:
+    - import the whole module (not single elements). Afterwards access it everything as global_variables.x
+        from settings import global_variables as globV
+        globV.progPath
+    - Call this function giving it the main file's __file__ as argument, preferably just inside the main-file:
+        global_variables.set_ProgramPath(__file__)
+    '''
     global progPath
     #print('sys.argv[0] =', sys.argv[0])
     #progPath = os.path.dirname(sys.argv[0])

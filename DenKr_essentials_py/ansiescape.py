@@ -1,4 +1,4 @@
-from package.printf import printf
+from DenKr_essentials_py.DenKr_terminal import printf
 
 
 

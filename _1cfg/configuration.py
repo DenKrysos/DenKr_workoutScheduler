@@ -7,10 +7,31 @@ Created on 2023-04-09
 @author: Dennis Krummacker
 '''
 ###############################################
+###   Dev-Notes                 ###############
+###   (irrelevant for users)    ###############
+#==============================================
+# The Config-Strucute, used internally in the app is created in "./settings/config_handler.py"
+# -> Adjust this as well, in case config-variables change, are added or removed.
+#==============================================
+#
+###############################################
 ###   Required Imports      ###################
 ###   (just leave alone)    ###################
 #==============================================
-from settings.values import equipmentIdentifier
+from settings.values import equipID, useMeth
+#==============================================
+
+
+
+
+###############################################
+###   Usage-Methodology                ########
+###   (how do you wish to interface?)  ########
+#==============================================
+# Valid Values (see "./settings/values.py"):
+#    .Terminal
+#    .GUI
+usageMethodology=useMeth.GUI
 #==============================================
 
 
@@ -20,7 +41,7 @@ from settings.values import equipmentIdentifier
 ###   Formatting-Settings            ##########
 ###   (for formatting the Output)    ##########
 #==============================================
-upcomingOutput_Reverse=True
+upcomingOutput_Reverse=False
 #==============================================
 
 
@@ -44,15 +65,15 @@ num_workout_toCompute=int(workouts_perWeek*2)
 ###   (for you to adjust which Equipment you have at disposal)   #####
 #=====================================================================
 exercisesToInclude={
-    equipmentIdentifier.Bodyweight.value[0]:True,
-    equipmentIdentifier.Sling.value[0]:True,
-    equipmentIdentifier.ResistanceBand.value[0]:True,
-    equipmentIdentifier.Dumbbell.value[0]:True,
-    equipmentIdentifier.Barbell.value[0]:False,
-    equipmentIdentifier.PullUpBar.value[0]:True,
-    equipmentIdentifier.SimpleBench.value[0]:False,# A simple Bench/Step, something where you can lie on to elevate your body and have your arms free to go deeper than your body
-    equipmentIdentifier.MountBench.value[0]:False,# A sophisticated Bench with a mount attached for a barbell
-    equipmentIdentifier.CablePull.value[0]:False,
-    equipmentIdentifier.Gym.value[0]:False
+    equipID.Bodyweight:True,
+    equipID.Sling:True,
+    equipID.ResistanceBand:True,
+    equipID.Dumbbell:True,
+    equipID.Barbell:False,
+    equipID.PullUpBar:True,
+    equipID.SimpleBench:False,# A simple Bench/Step, something where you can lie on to elevate your body and have your arms free to go deeper than your body
+    equipID.MountBench:False,# A sophisticated Bench with a mount attached for a barbell
+    equipID.CablePull:False,
+    equipID.Gym:False
 }
 #==============================================

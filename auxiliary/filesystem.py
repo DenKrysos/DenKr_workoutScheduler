@@ -10,7 +10,7 @@ Last modified: 2023-04-10
 
 
 ## Some Fundamentals
-import package.importMe_fundamental  # @UnusedImport
+import DenKr_essentials_py.importMe_fundamental  # @UnusedImport
 
 
 ## System Packages
@@ -19,8 +19,11 @@ import json
 import datetime
 
 
+##Global Variables & HCI-struct of Output-Handling
+from settings import global_variables as globV
+
+
 ##Project Settings
-from settings import global_variables
 from settings.path_and_file import (
     history_file_subpath,
     history_file_bkp_subpath,
@@ -30,15 +33,15 @@ from settings.path_and_file import (
 
 
 
-def history_create_file(path,file_full):
+def create_file(path,file_full):
     _assure_Dir_exists(path)
     try:
-        f = open(file_full, mode='w', encoding = 'utf-8')
+        f=open(file_full, mode='w', encoding = 'utf-8')
     except FileNotFoundError:
-        print("Creation of history-file %s failed" % file_full)
+        globV.HCI.printErr("Creation of File failed: \"%s\"" % file_full)
         return
     except:
-        print("Creation of history-file %s failed" % file_full)
+        globV.HCI.printErr("Creation of File failed: \"%s\"" % file_full)
         return
     #finally:
         #f.close()
@@ -47,20 +50,20 @@ def history_create_file(path,file_full):
 
 
 
-def file_json_write(fName,writeData):
-    fpath=os.path.join(global_variables.progPath,history_file_subpath)
+def file_json_write(fPath_sub,fName,writeData):
+    fpath=os.path.join(globV.progPath,fPath_sub)
     ffull_tmp=os.path.join(fpath,fName+".tmp")
     ffull=os.path.join(fpath,fName)
     if os.path.exists(ffull_tmp):# We don't want that: First delete existing one
         os.remove(ffull_tmp)
     try:
         #f = open(ffull_tmp, mode='w', encoding = 'utf-8')
-        f=history_create_file(fpath,ffull_tmp)
+        f=create_file(fpath,ffull_tmp)
         #File Operations
         json.dump(writeData,f,sort_keys=False,indent=2)
         f.close()
     except:
-        print("Writing of history-file %s failed" % ffull_tmp)
+        globV.HCI.printErr("Writing of history-file %s failed" % ffull_tmp)
         return
     #finally:
         #f.close()
@@ -72,11 +75,11 @@ def file_json_write(fName,writeData):
 
 
 
-def file_json_read(fName):
-    fpath=os.path.join(global_variables.progPath,history_file_subpath)
+def file_json_read(fPath_sub,fName):
+    fpath=os.path.join(globV.progPath,fPath_sub)
     ffull=os.path.join(fpath,fName)
     try:
-        f = open(ffull, mode='r', encoding = 'utf-8')
+        f=open(ffull, mode='r', encoding = 'utf-8')
         # perform file operations
         try:
             readF=json.load(f)
@@ -94,8 +97,8 @@ def file_json_read(fName):
 
 
 
-def file_backup_asMove(fName,fExt):
-    fpath_src=os.path.join(global_variables.progPath,history_file_subpath)
+def file_backup_asMove(fPath_sub,fName,fExt):
+    fpath_src=os.path.join(globV.progPath,fPath_sub)
     fpath_dst=os.path.join(fpath_src,history_file_bkp_subpath)
     ffull_src=os.path.join(fpath_src,fName+fExt)
     dateToday=datetime.datetime.now(datetime.timezone.utc).date().isoformat()
@@ -105,16 +108,16 @@ def file_backup_asMove(fName,fExt):
     try:
         os.rename(ffull_src,ffull_dst)
     except:
-        print("Could not create History-File Backup \"%s\"."%(fName+fExt))
+        globV.HCI.printErr("Could not create History-File Backup \"%s\"."%(fName+fExt))
 
 
 
 def directory_history_tidy():
-    histDir=os.path.join(global_variables.progPath,history_file_subpath)
+    histDir=os.path.join(globV.progPath,history_file_subpath)
     dateToday=datetime.datetime.now(datetime.timezone.utc).date().isoformat()
     bkpDir=os.path.join(histDir,history_file_bkp_subpath,"tidy_"+dateToday)
-    with os.scandir(histDir) as iter:
-        for entry in iter:
+    with os.scandir(histDir) as it:
+        for entry in it:
             if os.path.isfile(entry.path):
                 if not entry.name in history_files_all:
                     _assure_Dirs_exist(bkpDir)
@@ -122,7 +125,7 @@ def directory_history_tidy():
                         full_dst=os.path.join(bkpDir,entry.name)
                         os.rename(entry.path,full_dst)
                     except:
-                        print("While tidying up History-Dir, could not move File \"%s\" to \"%s\"."%(entry.name,bkpDir))
+                        globV.HCI.printErr("While tidying up History-Dir, could not move File \"%s\" to \"%s\"."%(entry.name,bkpDir))
 
 
 
@@ -144,9 +147,9 @@ def _assure_Dir_exists(fullPath):
     except FileExistsError:
         pass
     except OSError:
-        print("Creation of the directory %s failed" % fullPath)
+        globV.HCI.printErr("Creation of the Directory failed: \"%s\"."%fullPath)
     except:
-        print("Creation of the directory %s failed" % fullPath)
+        globV.HCI.printErr("Creation of the Directory failed: \"%s\"."%fullPath)
     #else:
         #print("Successfully created the directory %s " % path)
 
@@ -157,7 +160,7 @@ def _assure_Dir_exists(fullPath):
 
 
 def file_json_read_singleArray(fName):
-    fpath=os.path.join(global_variables.progPath,history_file_subpath)
+    fpath=os.path.join(globV.progPath,history_file_subpath)
     ffull=os.path.join(fpath,fName)
     try:
         f = open(ffull, mode='r', encoding = 'utf-8')
@@ -174,3 +177,31 @@ def file_json_read_singleArray(fName):
     #finally:
         #f.close()
     return readF
+
+
+
+
+
+
+
+
+
+#######################################
+# Dev-Notes
+#
+#
+'''
+# Reg-Ex for removing last Seven Entries (Select from first to last comma (including both))
+    ,
+    \d+(\.\d+)?,
+    \d+(\.\d+)?,
+    \d+(\.\d+)?,
+    \d+(\.\d+)?,
+    \d+(\.\d+)?,
+    \d+(\.\d+)?,
+    \d+(\.\d+)?
+  ],
+  
+# Replace with:
+],
+'''

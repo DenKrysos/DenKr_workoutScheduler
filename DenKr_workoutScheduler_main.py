@@ -29,39 +29,59 @@ It defines:
 
 
 ## Some Fundamentals
-import package.importMe_fundamental  # @UnusedImport
+import DenKr_essentials_py.importMe_fundamental  # @UnusedImport
 
 
 ## System Packages
 import sys  # @UnusedImport
+import os
 # import sysv_ipc  #System V IPC primitives (semaphores, shared memory and message queues) for Python
 import signal
 #import time
 import datetime
 # import math
-from sys import argv
 #import builtins
 #import numpy as numpy
 #    numpy.lcm.reduce([40, 12, 20])
 #import bz2
-# from package.WindowManager_XServer import *  # @UnusedImport @UnusedWildImport
+# from DenKr_essentials_py.WindowManager_XServer import *  # @UnusedImport @UnusedWildImport
 #from pprint import pprint
+
+## Installation / exe-Packaging
+# Currently, I recommend using PyInstaller
+#    pip install -U pyinstaller
+#    pyinstaller DenKr_workoutScheduler_main.py
 
 
 
 
 ##DenKr Packages
-from package.ansiescape import *  # @UnusedImport @UnusedWildImport
+from DenKr_essentials_py.ansiescape import *  # @UnusedImport @UnusedWildImport
 from auxiliary import math  # @UnusedImport @UnusedWildImport
+from DenKr_essentials_py.cmdLine import cmdLine_Mux
+from DenKr_essentials_py.order_tidyness import remove_pycache
+from DenKr_essentials_py.dependency_management import assure_dependencies
+from auxiliary.config_handling import configHandle_setup
+from commonFeatures.bits_and_pieces import print_introduction
+##GUI
+from GUI.GUI_tkinter import DKWoSched_GUI
 
 
 ##Other Files for Project
 ##Workout-Scheduler Packages
 from workoutScheduler.workout import workout
-##Fundamental Project Settings
-from settings import VersionInfo
-##Global Variables
-from settings import global_variables
+##Regarding Arrangement/Ensemble
+from settings.values import useMeth
+from settings.path_and_file import (
+    requirements_path,
+    requirements_fName_plain,
+    requirements_fName_GUI,
+)
+##Global Variables & HCI-struct of Output-Handling
+from settings import global_variables as globV
+##Individual Configuration
+import settings.config_handler as cfghandle
+
 
 
 
@@ -102,38 +122,20 @@ def main_variant1():
     #ToDo: For smoothening, a more sophisticated consideration of "related small & big muscle groups". That is, not combining small muscles together with big muscles, where compound-movements for the big muscle also attacks the small muscle. E.g. don't combine the front-delt in one workout with the chest
     #Optional, eher nicht: Add Scale_Up & Scale_Down again. Mag Sinn ergeben, um die Credits besser auszuglätten. Vielleicht aufeinander bezogen -> Wenn einmal up-scaled wurde den threshold verringern, welcher die kommenden Workouts down_scaled. Damit mag sich ergeben, dass ein workout mal ein (oder zwei) Muskeln mehr trainiert, wenn sie dringend anliegen und man dann ein kommendes Workout etwas kürzer gestalten kann. (Kann einerseits sinnvoll sein, um solche Muskelgruppen nicht zu lange zu pausieren und dann zu schnell aufeinander zwei Mal trainiert. Ist aber andererseits auch wieder dämlich, weil dann einzelne Workouts zu lang werden, was schlecht für das Testo-Level ist...)
     err=0  # @UnusedVariable
-    #print("Call it with Python 3.7 or higher! This requires order-preserving dictionaries.")
-    print("DenKr_workoutScheduler (v. %s)"%(VersionInfo.VERSION_DESCRIPTION))
-    print(" (Path of Script: %s) [Here, the History is stored]"%(global_variables.progPath))
-    print("")
-    print("It calculates a progressing schedule for your resistance-training workout, i.e. tells you in which order you may train your muscle-groups.")
-    print("In the files \"./_1cfg/configuration.py\" & \"./_1cfg/setup.py\" you may define your demands. That is, how many workouts you intend to do per week and how often per week individual muscles shall be attacked; as well as which types of exercises you want (in terms of required equipment) or the individual exercises themselves.")
-    print("The default should provide a solid setup for most people up to advanced. However, if you are very advanced you may need to adjust the volume and for sure your total workouts per week.")
-    print("The tool stores the calculated schedule as a history in text-files and loads them during a run, to maintain a consistant suitable flow. After startup you are first told (again) the last loaded workouts, then the new ones are presented on the terminal.")
-    print("Before writing the history (i.e. appending the newly computed workouts), you are prompted a query on the console whether the persistent history files shall be updated or not. You can use this to just lookup the last preceding computation without creating a new one and unintentionally messing with the history files.")
-    print("\n--------------------------------\n")
-    print("This Workout-Scheduler has as baseline the assumption, that you work-out every second day (i.e. 3.5 times a week) and are with that able to attack the big muscles twice a week, the smalls once and abs & calves thrice in two weeks.")
-    print("This scales very well if you adjust the total-workouts-per-week value and the workouts_perMuscle_perWeek to for instance attack them more fequently or with a higher volume in case you are more advanced.")
-    print("You might want to use a workaround if you intend to work-out below the recommended baseline volume:")
-    print("You could work with the default-values but work-out less frequently than every second day. By that, you are still attacking all muscles nicely proportoned but are leaving some extra gains because over surpluss regeneration.")
-    print("")
-    print("What you still got to do: Pay attention to your bigger muscle-groups, like your back! Spread the work appropriately to all these different muscles on your back. Some exercises you are proposed for your 'back/back-delts/lower-back/...' can be performed in variation to shift the intensity focus. As you know, there is a lot more than just 'Back' or 'Rotator-Cuff'. Teres major, Teres Minor, Infraspinatus, Supraspinatus and whatnot. Hence you are recommended to think along and decide how you precisely execute an exercise to hit all the single muscles and train them evenly.")
-    print(" Tl;dr: Use the workout recommendation to get the Muscle-groups and Exercises to do but feel free to vary the execution in order to fully hit all single muscles with equal intensity. That is, of course, pretty much valid for all muscle groups. You are to fiddle around a little with the schedule recommendation of this tool.")
-    print("Another Tipp: In times, when you are proposed a smaller workout - only 3 muscles or so - you may want to fill the hole with something beneficial instead of just stopping the workout early. Fill in an additional session of facepulls for example. Do some external rotation exercise. Hit some back shoulder / back muscles, which could use some additional training. Do some isolated lower-back movement, like bend down to hyper-extension. There's always something to do.")
-    print("")
-    print("Reverse Output:")
-    print("Watch out for the Variable 'upcomingOutput_Reverse' inside the file \"./_1cfg/configuration.py\".")
-    print("Set this to '0' to print out the computed Workout-Schedule with rising number (Starting with Workout-1, going up to Workout-n).")
-    print("Set it to '1' to print the Schedule 'reverse', i.e. with falling number (Starting with Workout-n, going down to Workout-1).")
-    print("")
-    print("Workout-Notation:")
-    print("• When 'one exercise' is denotet in the form of actually two exercises, joined by \"->\", this specifies a \"Compund-Superset\".")
-    print("  This means: Perform both exercises in direct succession without any break. You may give the first exercise like 60-80% of your power and finish off with the second; or perform the first nearly up to exhaustion and then use the second to finish towards nearly failure.")
-    print("• You may also be proposed multiple distinct exercises. Denoted as \">&\". This happens, when a muscle shall be trained in the workout but the primarily picked exercise does not bring sufficient intensity. Then additional exercises are added.")
-    print("  So you do all exercises, but more separated and not as rapid Superset. (Albeit doing as Superset would actually also be fine...)")
-    print("")
-    print("")
-    err=DenKr_workoutScheduler_Main()
+    configHandle_setup()
+    if useMeth.Terminal==cfghandle.cfgh_rt[cfghandle.keyUseMeth]:
+        assure_dependencies(os.path.join(globV.progPath,requirements_path),requirements_fName_plain)
+        print_introduction()
+        err=DenKr_workoutScheduler_Main()
+        return 0
+    elif useMeth.GUI==cfghandle.cfgh_rt[cfghandle.keyUseMeth]:
+        assure_dependencies(os.path.join(globV.progPath,requirements_path),requirements_fName_GUI)
+        GUI_instance=DKWoSched_GUI()  # @UnusedVariable
+        return 0
+    else:
+        globV.HCI.printErr("Invalid Value configured for \"usageMethodolgy\" in \"./_1cfg/configuration.py\".")
+        globV.HCI.printErr("   -> Terminating...")
+        return 2
     return err
 #------------------------------------------------------------------------------------------
 
@@ -186,52 +188,57 @@ def signal_handler__Ctrl_c(sig, frame):
 #Return:
 #  0 - No Arguments. Continue normal operation
 #  1 - Cmd-Line Mux did all the work. Terminate
-#  2 - Invalid Cmd-Line Arguments
-#  3 - Reserved
-def cmdLine_Mux(argc,argv):
-    # todo
-    if 0>=argc:
-        return 0
-    else:
-        argc-=1
-        curArg=0
-        if argv[curArg]=="history":
-            if 0<argc:
-                argc-=1
-                curArg+=1
-                if argv[curArg]=="trim":
+#  2 - Insufficient Number of Arguments
+#  3 - Invalid Cmd-Line Arguments
+#  4 - Reserved
+class cmdLine_Mux_DKWOSched(cmdLine_Mux):
+    #------------------------------------------------------------------------------------------
+    def __init__(self):
+        super().__init__()
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def __del__(self):
+        super().__del__()
+    #------------------------------------------------------------------------------------------
+    def cmdLine_Mux(self):
+        # todo
+        if 0>=self.targc:
+            return 0
+        else:
+            if self.argv[self.curArg]=="history":
+                err=self.cmdLine_Mux__oneLevelDeeper("history")
+                if err:
+                    return err
+                if self.argv[self.curArg]=="trim":
                     work=workout()
                     work.history_trim_query()
                     return 1
                 else:
-                    print("-> Invalid Cmd-Line Argument after \"trim\".")
-                    return 2
+                    globV.HCI.printStd(f"-> Invalid Cmd-Line Argument after \"trim\": \'{self.argv[self.curArg]}\'")
+                    return 3
+            elif self.argv[self.curArg]=="clear":
+                err=self.cmdLine_Mux__oneLevelDeeper("clear")
+                if err:
+                    return err
+                if self.argv[self.curArg]=="pycache":
+                    remove_pycache(globV.progPath)
+                    return 1
+                else:
+                    globV.HCI.printStd(f"-> Invalid Cmd-Line Argument after \"pycache\": \'{self.argv[self.curArg]}\'")
+                    return 3
             else:
-                print("-> Insufficient Cmd-Line Arguments after \"trim\".")
-                return 2
-        else:
-            print("-> Invalid Cmd-Line Argument.")
-            return 2
-def cmdLine_Mux__errHandling(argc,argv):
-    err=cmdLine_Mux(argc,argv)
-    if 0==err:
-        pass
-    elif 1==err:
-        print("\nDone.")
-        print(sys.exit())
-    elif 2==err:
-        print("\nExiting...")
-        print(sys.exit())
-    else:
-        print(sys.exit())
+                globV.HCI.printStd(f"-> Invalid Cmd-Line Argument: \'{self.argv[self.curArg]}\'")
+                return 3
+    #------------------------------------------------------------------------------------------
+
+
 
 #------------------------------------------------------------------------------------------
 
-def main(argc,argv):
+def main(args):
     SET_ansi_escape_use()
     #printansi(ansi_blue,"""I can even use colors!\n""")
     # - - - - - - - - -
-    cmdLine_Mux__errHandling(argc,argv)
+    args.cmdLine_Mux__errHandling()
     # - - - - - - - - -
     err=main_variant1()
     #err=main_variant2()
@@ -240,13 +247,10 @@ def main(argc,argv):
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT,signal_handler__Ctrl_c)
-    #print('Number of arguments:',len(argv),'arguments.')
-    #print('Argument List:',str(argv))
-    argc = len(sys.argv)-1
-    argv=sys.argv[1:]
+    args=cmdLine_Mux_DKWOSched()
     # - - - - - - - - -
     #global progPath # Declared in ./settings/global_variables and importet
-    #print('sys.argv[0] =', sys.argv[0])
-    global_variables.set_ProgramPath(__file__)
+    #globV.HCI.printStd('sys.argv[0] =', sys.argv[0])
+    globV.set_ProgramPath(__file__)
     # - - - - - - - - -
-    main(argc,argv)
+    main(args)

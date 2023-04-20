@@ -13,7 +13,8 @@ from enum import Enum
 
 
 #-----------------------------------------------------
-class muscleIdentifier(Enum):
+# Muscle-Identifier
+class muscleID(Enum):
     chest=[1,"Chest"]
     back=[2,"Back"]
     rotator_cuff=[3,"Rotator-Cuff"]
@@ -30,7 +31,8 @@ class muscleIdentifier(Enum):
     lower_back=[14,"Lower-Back"]
     serratus_ant=[15,"Serratus-Anterior"]#Currently not really explicitly included in calculation
 #-----------------------------------------------------
-class equipmentIdentifier(Enum):
+# Equipment-Identifier
+class equipID(Enum):
     Bodyweight=[1,"Bodyweight"]
     Sling=[2,"Sling"]
     ResistanceBand=[3,"Resistance-Band"]
@@ -41,4 +43,20 @@ class equipmentIdentifier(Enum):
     MountBench=[8,"Mount-Bench"]# A sophisticated Bench with a mount attached for a barbell
     CablePull=[9,"Cable-Pull"]
     Gym=[10,"Gym"]
+#-----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+#-----------------------------------------------------
+class useMeth(Enum):
+    Terminal=[1,"Terminal"]
+    GUI=[2,"GUI"]
 #-----------------------------------------------------

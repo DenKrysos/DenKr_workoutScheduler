@@ -11,7 +11,7 @@ Last Update: 2023-04-13
 
 
 ## Some Fundamentals
-import package.importMe_fundamental  # @UnusedImport
+import DenKr_essentials_py.importMe_fundamental  # @UnusedImport
 
 
 ## System Packages
@@ -24,19 +24,23 @@ from itertools import groupby
 
 
 ##DenKr Packages
-from package.ansiescape import *  # @UnusedImport @UnusedWildImport
+from DenKr_essentials_py.ansiescape import *  # @UnusedImport @UnusedWildImport
 from auxiliary import math  # @UnusedImport @UnusedWildImport
 from auxiliary.filesystem import directory_history_tidy
+import datetime
 
+
+##Global Variables & HCI-struct of Output-Handling
+from settings import global_variables as globV
 
 ##Other Files for Project
 ##Workout-Scheduler Packages
 from workoutScheduler.muscle import muscle
 from workoutScheduler.exercise import exercise
 ##Regarding Arrangement/Ensemble
-from settings.values import muscleIdentifier
+from settings.values import muscleID
 ##Individual Configuration
-from _1cfg.configuration import upcomingOutput_Reverse, workouts_perWeek, num_workout_toCompute
+import settings.config_handler as cfghandle
 
 
 
@@ -75,9 +79,9 @@ class workout(object):
         self.num_workout_toCompute=int(self.workouts_perWeek*2)#6
         self.group_by_superset=1
     def set_basics(self):
-        self.workouts_perWeek=workouts_perWeek
+        self.workouts_perWeek=cfghandle.cfgh_rt[cfghandle.keyWOpW]
         #self.bigMuscle_precedence_tolerance=7/self.workouts_perWeek-1
-        self.num_workout_toCompute=num_workout_toCompute
+        self.num_workout_toCompute=cfghandle.cfgh_rt[cfghandle.keyNumComp]
         self.group_by_superset=1
     def set_phase2(self):
         #self.bigMuscle_precedence_tolerance=self.muscle_groups[0].malus*0.45
@@ -88,17 +92,18 @@ class workout(object):
             if self.muscle_groups[i].name!="glutes":#Because we assume that quads and glutes are most of the time trained in conjunction
                 muscles_perWeek_total+=self.muscle_groups[i].wo_pW
             i+=1
+        #print(f"musperWeek {muscles_perWeek_total} | {muscles_perWeek_total/self.workouts_perWeek}")
         self.muscles_per_workout=int(muscles_perWeek_total//self.workouts_perWeek)
         if self.muscles_per_workout!=4:
-            print("Attention! A \"muscles_per_workout\" of other than 4 was calculated. You might want to have a look into that (maybe overwrite the value directly, after \"set_phase2()\"). For most cases, 4 muscles per workout is an appropriate amount/value. This tool afterwards allows a reasonable deviation from that anyway to adjust individual workouts to the urgency of muscle groups.")
+            globV.HCI.printStd("Attention! A \"muscles_per_workout\" of other than 4 was calculated. You might want to have a look into that (maybe overwrite the value directly, after \"set_phase2()\"). For most cases, 4 muscles per workout is an appropriate amount/value. This tool afterwards allows a reasonable deviation from that anyway to adjust individual workouts to the urgency of muscle groups.")
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def set_exercises(self):
         exercise.set_exercises(self.exercises,self.exercises_excluded)
     def set_muscles(self):
         muscle.set_muscles(self.muscle_groups, self.workouts_perWeek)
         self.supersets=(
-            (muscleIdentifier.chest.value[0],muscleIdentifier.back.value[0]),
-            (muscleIdentifier.biceps.value[0],muscleIdentifier.triceps.value[0])
+            (muscleID.chest.value[0],muscleID.back.value[0]),
+            (muscleID.biceps.value[0],muscleID.triceps.value[0])
         )
     def set(self):
         self.set_basics()
@@ -107,12 +112,12 @@ class workout(object):
         self.set_phase2()
     #------------------------------------------------------------------------------------------
     def debug_print_muscles(self,lst,indiv_muscle_c):
-        print("Debug - Muscles: (Counter: %d)"%(indiv_muscle_c))
+        globV.HCI.printStd("Debug - Muscles: (Counter: %d)"%(indiv_muscle_c))
         i=0
         while i<len(lst):
-            print(lst[i].name)
+            globV.HCI.printStd(lst[i].name)
             i+=1
-        print("")
+        globV.HCI.printStd("")
     def debug_print_credits_sorted(self):
         printSet=[]
         musNum=len(self.muscle_groups)
@@ -126,31 +131,31 @@ class workout(object):
         for i in range(0,len(printSet),1):
             cr_ave+=printSet[i].credit
         cr_ave/=len(printSet)
-        print("Credits (Ave %2.2f): [ "%(cr_ave),end='')
+        globV.HCI.printStd("Credits (Ave %2.2f): [ "%(cr_ave),end='')
         for i in range(0,len(printSet)-1,1):
-            print("%s:%2.2f, "%(printSet[i].name,printSet[i].credit),end='')
-        print("%s:%2.2f"%(printSet[len(printSet)-1].name,printSet[len(printSet)-1].credit),end='')
-        print(" ]")
+            globV.HCI.printStd("%s:%2.2f, "%(printSet[i].name,printSet[i].credit),end='')
+        globV.HCI.printStd("%s:%2.2f"%(printSet[len(printSet)-1].name,printSet[len(printSet)-1].credit),end='')
+        globV.HCI.printStd(" ]")
     def debug_print_credits(self):
         cr_ave=0
         for i in range(0,len(self.muscle_groups),1):
             cr_ave+=self.muscle_groups[i].credit
         cr_ave/=len(self.muscle_groups)
-        print("Credits (Ave %2.2f): [ "%(cr_ave),end='')
+        globV.HCI.printStd("Credits (Ave %2.2f): [ "%(cr_ave),end='')
         for i in range(0,len(self.muscle_groups)-1,1):
-            print("%s:%2.2f, "%(self.muscle_groups[i].name,self.muscle_groups[i].credit),end='')
-        print("%s:%2.2f"%(self.muscle_groups[len(self.muscle_groups)-1].name,self.muscle_groups[len(self.muscle_groups)-1].credit),end='')
-        print(" ]")
+            globV.HCI.printStd("%s:%2.2f, "%(self.muscle_groups[i].name,self.muscle_groups[i].credit),end='')
+        globV.HCI.printStd("%s:%2.2f"%(self.muscle_groups[len(self.muscle_groups)-1].name,self.muscle_groups[len(self.muscle_groups)-1].credit),end='')
+        globV.HCI.printStd(" ]")
     def debug_print_credits_workingSet_generic(self,trgtArray):
         cr_ave=0
         for i in range(0,len(trgtArray),1):
             cr_ave+=trgtArray[i].credit
         cr_ave/=len(trgtArray)
-        print("WorkingSet[Cred] (Ave %2.2f): [ "%(cr_ave),end='')
+        globV.HCI.printStd("WorkingSet[Cred] (Ave %2.2f): [ "%(cr_ave),end='')
         for i in range(0,len(trgtArray)-1,1):
-            print("%s:%2.2f, "%(trgtArray[i].name,trgtArray[i].credit),end='')
-        print("%s:%2.2f"%(trgtArray[len(trgtArray)-1].name,trgtArray[len(trgtArray)-1].credit),end='')
-        print(" ]")
+            globV.HCI.printStd("%s:%2.2f, "%(trgtArray[i].name,trgtArray[i].credit),end='')
+        globV.HCI.printStd("%s:%2.2f"%(trgtArray[len(trgtArray)-1].name,trgtArray[len(trgtArray)-1].credit),end='')
+        globV.HCI.printStd(" ]")
     def debug_print_credits_workingSet_muscle(self):
         self.debug_print_credits_workingSet_generic(self.muscle_workingSet)
     def debug_print_credits_workingSet_exercise(self):
@@ -160,11 +165,11 @@ class workout(object):
         for i in range(0,len(trgtArray),1):
             urg_ave+=trgtArray[i].urgency
         urg_ave/=len(trgtArray)
-        print("WorkingSet[Urg] (Ave %2.2f): [ "%(urg_ave),end='')
+        globV.HCI.printStd("WorkingSet[Urg] (Ave %2.2f): [ "%(urg_ave),end='')
         for i in range(0,len(trgtArray)-1,1):
-            print("%s:%2.2f, "%(trgtArray[i].name,trgtArray[i].urgency),end='')
-        print("%s:%2.2f"%(trgtArray[len(trgtArray)-1].name,trgtArray[len(trgtArray)-1].urgency),end='')
-        print(" ]")
+            globV.HCI.printStd("%s:%2.2f, "%(trgtArray[i].name,trgtArray[i].urgency),end='')
+        globV.HCI.printStd("%s:%2.2f"%(trgtArray[len(trgtArray)-1].name,trgtArray[len(trgtArray)-1].urgency),end='')
+        globV.HCI.printStd(" ]")
     def debug_print_urgency_workingSet_muscle(self):
         self.debug_print_urgency_workingSet_generic(self.muscle_workingSet)
     def debug_print_urgency_workingSet_exercise(self):
@@ -173,9 +178,9 @@ class workout(object):
         lstlen=len(mlst)
         i=0
         while i<lstlen:
-            print(mlst[i].name)
+            globV.HCI.printStd(mlst[i].name)
             i+=1
-        print("")
+        globV.HCI.printStd("")
     #------------------------------------------------------------------------------------------
     def history_read(self):
         directory_history_tidy()
@@ -187,7 +192,7 @@ class workout(object):
 #         for i in range(1,len(self.muscle_groups),1):
 #             len_cur=len(self.muscle_groups[i].history)
 #             if len_first!=len_cur:
-#                 print("Malformed History: Unmatching lenghts. History of muscle \"%s\" is of different length (%d) than of muscle \"%s\" (%d)"%(name_first,len_first,self.muscle_groups[i].idx,len_cur))
+#                 globV.HCI.printStd("Malformed History: Unmatching lenghts. History of muscle \"%s\" is of different length (%d) than of muscle \"%s\" (%d)"%(name_first,len_first,self.muscle_groups[i].idx,len_cur))
         muscle.history_prepare_shortened_all(self.muscle_groups,self.workouts_perWeek)
         exercise.history_read_file(self.exercises,self.exercises_excluded)
         exercise.history_prepare_shortened_all(self.exercises,self.workouts_perWeek)
@@ -200,24 +205,24 @@ class workout(object):
     def history_write_userQuery(self):
         inputtry=0
         while 1:
-            print("»Shall the history-files be updated with the recent computation?« (y/n)")
+            globV.HCI.printStd("»Shall the history-files be updated with the recent computation?« (y/n)")
             inp=input()
             if inp=="y" or inp=="yes" or inp=="ja" or inp=="j" or inp=="1":
-                print("-> »Updating History«")
+                globV.HCI.printStd("-> »Updating History«")
                 #inputtry=3
                 return True
             elif inp=="n" or inp=="no" or inp=="nein" or inp=="n" or inp=="0":
-                print("-> »NO Update to History«")
+                globV.HCI.printStd("-> »NO Update to History«")
                 #inputtry=3
                 return False
             else:
-                print("-> »Invalid Input.",end='')
+                globV.HCI.printStd("-> »Invalid Input.",end='')
                 inputtry+=1
                 if inputtry>=3:
-                    print("«\n»Yeah, I propose we just cancel this...«\n")
+                    globV.HCI.printStd("«\n»Yeah, I propose we just cancel this...«\n")
                     return False
                 else:
-                    print(" Try again.«\n")
+                    globV.HCI.printStd(" Try again.«\n")
     def push_schedule_toHistory(self):
         muscle.history_push_schedule_all(self.muscle_groups)
         #muscle.history_prepare_shortened_all(self.muscle_groups,self.workouts_perWeek)
@@ -236,27 +241,27 @@ class workout(object):
     def history_trim_query(self):
         inputtry=0
         while 1:
-            print("»History Files Trimming called. Shall I proceed?«")
-            print("    (Continue: y / yes / ja / j / 1)")
-            print("    (Abort: n / no / nein / 0)")
+            globV.HCI.printStd("»History Files Trimming called. Shall I proceed?«")
+            globV.HCI.printStd("    (Continue: y / yes / ja / j / 1)")
+            globV.HCI.printStd("    (Abort: n / no / nein / 0)")
             inp=input()
             if inp=="y" or inp=="yes" or inp=="ja" or inp=="j" or inp=="1":
-                print("-> »Trimming History«")
+                globV.HCI.printStd("-> »Trimming History«")
                 self.set()
                 self.history_read()
                 self.history_trim()
                 return True
             elif inp=="n" or inp=="no" or inp=="nein" or inp=="0":
-                print("-> »NOT Trimming History«")
+                globV.HCI.printStd("-> »NOT Trimming History«")
                 return False
             else:
-                print("-> »Invalid Input.",end='')
+                globV.HCI.printStd("-> »Invalid Input.",end='')
                 inputtry+=1
                 if inputtry>=3:
-                    print("«\n»Yeah, Ehem, I propose we just cancel this...«\n")
+                    globV.HCI.printStd("«\n»Yeah, Ehem, I propose we just cancel this...«\n")
                     return False
                 else:
-                    print(" Try again.«\n")
+                    globV.HCI.printStd(" Try again.«\n")
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def __history_show_WorkoutSchedule_element_generic_reverse(self,exeList,index,chosenList):
         #index+=1#Because when using it subtractive to access the entries in reverse order, one would actually have to use 'len(List)-1'. With this increment here, this is done for
@@ -287,21 +292,20 @@ class workout(object):
                     exeForThisMus.append((j,jexercise))
             for imuscle in scheduled_mus:
                 if iList[len(iList)-index]==imuscle.idx:
-                    print("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
+                    globV.HCI.printStd("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
                     if 1<len(exeForThisMus):
-                        print(" ",end="")
+                        globV.HCI.printStd(" ",end="")
                         for i in range(1,len(exeForThisMus),1):
-                            print("  >& %s"%(exeForThisMus[i][1].name),end="")
-                        print("")
+                            globV.HCI.printStd("  >& %s"%(exeForThisMus[i][1].name),end="")
+                        globV.HCI.printStd("")
             for j in range(len(exeForThisMus)-1,-1,-1):
                 scheduled_exe.pop(exeForThisMus[j][0])
                 leftEnt-=1
     def _history_show_previousWorkoutSchedule_element(self,exeList,index):
-        print("===============")
-        print("== Workout t-%d"%(index))
-        print("---------------")
+        globV.HCI.printStd("===============")
+        globV.HCI.printStd("== Workout t-%d"%(index))
+        globV.HCI.printStd("---------------")
         self.__history_show_WorkoutSchedule_element_generic_reverse(exeList,index,"history_shortened")
-        print("")
     def history_show_previousWorkoutSchedule(self):
         #TODO
         exeList=self.exercises+self.exercises_excluded
@@ -314,17 +318,20 @@ class workout(object):
         numOutput=int(self.workouts_perWeek*2)
         numOutput=min(numOutput,lenMax)
 
-        print("######################")
-        print("# Previous Workouts: #")
         i=numOutput
         while i>=1:
             self._history_show_previousWorkoutSchedule_element(exeList,i)
+            if 1<i:
+                globV.HCI.printStd("")
             i-=1
-        print("#########################################")
-        print("#########################################")
-        print("#########################################\n")
-        pass
-    def _history_show_computedWorkoutSchedule_element(self,index):
+    def history_show_previousWorkoutSchedule_terminal(self):
+        globV.HCI.printStd("######################")
+        globV.HCI.printStd("# Previous Workouts: #")
+        self.history_show_previousWorkoutSchedule()
+        globV.HCI.printStd("#########################################")
+        globV.HCI.printStd("#########################################")
+        globV.HCI.printStd("#########################################\n")
+    def _history_show_computedWorkoutSchedule_element(self,index,dotw="DotW",year="2023",month="MM",day="DD"):
         scheduled_exe=[]
         scheduled_mus=[]
         for iexercise in self.exercises:
@@ -333,10 +340,12 @@ class workout(object):
         for imuscle in self.muscle_groups:
             if 0<imuscle.schedule[index]:
                 scheduled_mus.append(imuscle)
-        print("===============")
-        #print("== Workout %d"%(i+1))
-        print("== DotW%d, 2023-MM-DD"%(index+1))
-        print("---------------")
+        globV.HCI.printStd("===============")
+        #globV.HCI.printStd("== Workout %d"%(i+1))
+        if "DotW"==dotw:
+            dotw=dotw+f"{index+1}"
+        globV.HCI.printStd(f"== {dotw}, {year}-{month}-{day}")
+        globV.HCI.printStd("---------------")
         leftEnt=len(scheduled_exe)
         while 0<leftEnt:
             iexercise=scheduled_exe[0]
@@ -348,31 +357,75 @@ class workout(object):
                     exeForThisMus.append((j,jexercise))
             for imuscle in scheduled_mus:
                 if iexercise.schedule[index]==imuscle.idx:
-                    print("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
+                    globV.HCI.printStd("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
                     if 1<len(exeForThisMus):
-                        print(" ",end="")
+                        globV.HCI.printStd(" ",end="")
                         for i in range(1,len(exeForThisMus),1):
-                            print("  >& %s"%(exeForThisMus[i][1].name),end="")
-                        print("")
+                            globV.HCI.printStd("  >& %s"%(exeForThisMus[i][1].name),end="")
+                        globV.HCI.printStd("")
             for j in range(len(exeForThisMus)-1,-1,-1):
                 scheduled_exe.pop(exeForThisMus[j][0])
                 leftEnt-=1
-        print("\n")
-    def history_show_computedWorkoutSchedule(self):
-        print("######################")
-        print("# Computed Schedule: #  (Reverse-Output: %s)"%(upcomingOutput_Reverse))
-        if not upcomingOutput_Reverse:
+    def history_show_computedWorkoutSchedule(self,date=None):
+        def _set_weekday():
+            day=date.weekday()
+            if 0==day:
+                return "Mo"
+            elif 1==day:
+                return "Di"
+            elif 2==day:
+                return "Mi"
+            elif 3==day:
+                return "Do"
+            elif 4==day:
+                return "Fr"
+            elif 5==day:
+                return "Sa"
+            elif 6==day:
+                return "So"
+            else:
+                return "DotW"
+        daydelta=7.0/self.workouts_perWeek
+        if not cfghandle.cfgh_rt[cfghandle.keyOutRev]:
             i=0
             while i<len(self.muscle_groups[0].schedule):
-                self._history_show_computedWorkoutSchedule_element(i)
+                if 0<i:
+                    globV.HCI.printStd("\n")
+                if date is None:
+                    self._history_show_computedWorkoutSchedule_element(i)
+                else:
+                    dotw=_set_weekday()
+                    self._history_show_computedWorkoutSchedule_element(i,dotw,date.strftime('%Y'),date.strftime('%m'),date.strftime('%d'))
+                    date=date+datetime.timedelta(days=int(daydelta))
                 i+=1
-        elif upcomingOutput_Reverse:
+        elif cfghandle.cfgh_rt[cfghandle.keyOutRev]:
+            if not date is None:
+                date=date+datetime.timedelta(days=int(daydelta*(len(self.muscle_groups[0].schedule)-1)))
             i=len(self.muscle_groups[0].schedule)-1
             while i>=0:
-                self._history_show_computedWorkoutSchedule_element(i)
+                if len(self.muscle_groups[0].schedule)-1>i:
+                    globV.HCI.printStd("\n")
+                if date is None:
+                    self._history_show_computedWorkoutSchedule_element(i)
+                else:
+                    dotw=_set_weekday()
+                    self._history_show_computedWorkoutSchedule_element(i,dotw,date.strftime('%Y'),date.strftime('%m'),date.strftime('%d'))
+                    date=date-datetime.timedelta(days=int(daydelta))
                 i-=1
         else:
-            print("Invalid Value given for \"upcomingOutput_Reverse\"")
+            globV.HCI.printStd("Invalid Value given for \"upcomingOutput_Reverse\"")
+    def history_show_computedWorkoutSchedule_terminal(self):
+        globV.HCI.printStd("######################")
+        globV.HCI.printStd("# Computed Schedule: #  (Reverse-Output: %s)"%(cfghandle.cfgh_rt[cfghandle.keyOutRev]))
+        self.history_show_computedWorkoutSchedule()
+        globV.HCI.printStd("")
+        globV.HCI.printStd("#########################################")
+        globV.HCI.printStd("#########################################")
+        globV.HCI.printStd("\n")
+    def print_Fin(self):
+        globV.HCI.printStd("\nFin.\nGood Success with your endeavours.\n")
+        globV.HCI.printStd("P.S.: Oh yeah, and remember to always do your fucking »Facepull«! ;oD")
+        globV.HCI.printStd("      And don't forget your »YTWL«...\n")
     #------------------------------------------------------------------------------------------
     def muscles_analyse_history(self):
         muscle.derive_credit_fromHistory_all(self.muscle_groups,self.credit_center)
@@ -423,7 +476,7 @@ class workout(object):
             joined_history=self.muscle_workingSet[i].history_shortened+self.muscle_workingSet[i].schedule
             hist_len=len(joined_history)
             if hist_len>0:
-                if joined_history[hist_len-1]==1:
+                if joined_history[hist_len-1]>=exercise.minimumServing:
                     #self.muscle_workingSet.append(self.muscle_workingSet.pop(self.muscle_workingSet.index(5)))
                     #self.muscle_workingSet.append(self.muscle_workingSet.pop(i))
                     self.muscle_workingSet.pop(i)
@@ -457,7 +510,7 @@ class workout(object):
 #         elif quadglute[0]!=-1 and quadglute[1]!=-1:
 #             indiv_muscle_c+=1
 #         else:
-#             print("Bug detected in urgencyAdjust. Quads & Glutes are supposed to occur jointly. Exiting...")
+#             globV.HCI.printStd("Bug detected in urgencyAdjust. Quads & Glutes are supposed to occur jointly. Exiting...")
 #             exit()
         
         pre_len=len(picked_pre)
@@ -566,7 +619,7 @@ class workout(object):
                 #remove, until countDiff==0
                 picked_pre.sort(key=lambda x: x.urgency, reverse=True)
 #                 for l in range(0,len(picked)):
-#                     print("picked: %s"%(picked[l].idx))
+#                     globV.HCI.printStd("picked: %s"%(picked[l].idx))
                 while countDiff>0:
                     if countDiff==1:
                         #Try to remove no superset, if a single exercise does not have a credit very much higher
@@ -577,7 +630,7 @@ class workout(object):
                         else:
                             i=len(picked_pre)-2
                             while i>=0:
-                                #print("test %s"%(picked_pre[i].idx))
+                                #globV.HCI.printStd("test %s"%(picked_pre[i].idx))
                                 if picked_pre[i].credit>=1+picked_pre[i].malus:#ToDo: Check Credit vs. Urgency
                                     supset_check=self._is_supersetMuscle(picked_pre[i])
                                     if not supset_check[0]:
@@ -663,10 +716,10 @@ class workout(object):
         
         i=len(picked)-1
         while i>=0:
-            if picked[i].idx==muscleIdentifier.rotator_cuff.value[0]:
+            if picked[i].idx==muscleID.rotator_cuff.value[0]:
                 j=len(picked)-1
                 while j>=0:
-                    if picked[j].idx==muscleIdentifier.delt_rear.value[0]:
+                    if picked[j].idx==muscleID.delt_rear.value[0]:
                         replace+=1
                         self._muscle_reappend(picked[j].idx)
                         picked.pop(j)
@@ -674,7 +727,7 @@ class workout(object):
                             i-=1
                         break
                     j-=1
-            elif picked[i].idx==muscleIdentifier.delt_side.value[0]:
+            elif picked[i].idx==muscleID.delt_side.value[0]:
                 j=len(picked)-1
                 while j>=0:
 #                     if picked[j].idx=="delt_front":
@@ -684,7 +737,7 @@ class workout(object):
 #                         if j<i:
 #                             i-=1
 #                         continue
-                    if picked[j].idx==muscleIdentifier.delt_rear.value[0]:
+                    if picked[j].idx==muscleID.delt_rear.value[0]:
                         replace+=1
                         self._muscle_reappend(picked[j].idx)
                         picked.pop(j)
@@ -692,10 +745,10 @@ class workout(object):
                             i-=1
                         break#continue
                     j-=1
-            elif picked[i].idx==muscleIdentifier.lower_back.value[0]:
+            elif picked[i].idx==muscleID.lower_back.value[0]:
                 j=len(picked)-1
                 while j>=0:
-                    if picked[j].idx==muscleIdentifier.quads_n_glutes.value[0]:#This assumes that quads and glutes can only occur together. Thus it only checks for one
+                    if picked[j].idx==muscleID.quads_n_glutes.value[0]:#This assumes that quads and glutes can only occur together. Thus it only checks for one
                         replace+=1
                         if picked[j].urgency<picked[i].urgency:
                             self._muscle_reappend(picked[j].idx)
@@ -778,10 +831,10 @@ class workout(object):
             set_count=0
             set_found=2
 #         for k in range(0,len(picked),1):
-#             print(picked[k].idx)
-#         print("")
+#             globV.HCI.printStd(picked[k].idx)
+#         globV.HCI.printStd("")
 #         for k in range(0,len(picked_pre),1):
-#             print(picked_pre[k].idx)
+#             globV.HCI.printStd(picked_pre[k].idx)
         if added_new==0:
             #copy over all the rest
             #i=0
@@ -813,20 +866,25 @@ class workout(object):
             credit_average=0
             malus_ave=0
             bonus_ave=0
+            urgency_ave=0
             for i in range(0,len(self.muscle_workingSet)):
                 credit_average+=self.muscle_workingSet[i].credit
                 malus_ave+=self.muscle_workingSet[i].malus
                 bonus_ave+=self.muscle_workingSet[i].bonus
+                urgency_ave+=self.muscle_workingSet[i].urgency
             credit_average/=len(self.muscle_workingSet)
             malus_ave/=len(self.muscle_workingSet)
             bonus_ave/=len(self.muscle_workingSet)
-            #print("Aves %2.2f - %2.2f - %2.2f"%(credit_average,malus_ave,bonus_ave))
-            if credit_average>=self.credit_center+bonus_ave-malus_ave:
-                indiv_muscle_c-=1
-                print("Scaling down")
-            elif credit_average<=self.credit_center-malus_ave:
+            urgency_ave/=len(self.muscle_workingSet)
+            globV.HCI.printStd("AveCred %2.2f | AveUrg %2.2f - %2.2f - %2.2f"%(credit_average,urgency_ave,malus_ave,bonus_ave))
+            # if credit_average<=self.credit_center-malus_ave:
+            if 1.0<=urgency_ave:
                 indiv_muscle_c+=1
-                print("Scaling up")
+                globV.HCI.printStd("Scaling up")
+            # elif credit_average>=self.credit_center+bonus_ave-malus_ave:
+            elif -0.5>=urgency_ave:
+                indiv_muscle_c-=1
+                globV.HCI.printStd("Scaling down")
         
         picked=[]
         for i in range(0,self.muscles_per_workout,1):
@@ -843,8 +901,8 @@ class workout(object):
                     if self.muscle_workingSet[j].muscle_class==1:
                         picked.append(self.muscle_workingSet[j])
                         picked_big+=1
-                        #print("tolerance %f"%(self.bigMuscle_precedence_tolerance))
-                        #print("adding precedence %s"%(self.muscle_workingSet[j].idx))
+                        #globV.HCI.printStd("tolerance %f"%(self.bigMuscle_precedence_tolerance))
+                        #globV.HCI.printStd("adding precedence %s"%(self.muscle_workingSet[j].idx))
                 if picked_big>=2:
                     break
             #misuse "picked_big" as a counter for "picked_total"
@@ -856,7 +914,7 @@ class workout(object):
                 elif self.muscle_workingSet[i].muscle_class==1:
                     pass
                 else:
-                    print("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_workingSet[i].name)
+                    globV.HCI.printErr("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_workingSet[i].name)
                     exit()
                 i+=1
         else:
@@ -866,7 +924,7 @@ class workout(object):
                 elif self.muscle_workingSet[i].muscle_class==1:
                     pass
                 else:
-                    print("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_workingSet[i].name)
+                    globV.HCI.printErr("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_workingSet[i].name)
                     exit()
         #
         #self.debug_print_muscleList(picked)
@@ -978,16 +1036,14 @@ class workout(object):
     def workoutScheduling_main(self):
         self.set()
         self.history_read()
-        self.history_show_previousWorkoutSchedule()
+        self.history_show_previousWorkoutSchedule_terminal()
         self.compute_workoutSchedule()
-        self.history_show_computedWorkoutSchedule()
+        self.history_show_computedWorkoutSchedule_terminal()
         
         self.push_schedule_toHistory()
         
         if self.history_write_userQuery():
             self.history_write()
         
-        print("\nFin.\nGood Success with your endeavours.\n")
-        print("P.S.: Oh yeah, and remember to always do your fucking »Facepull«! ;oD")
-        print("      And don't forget your »YTWL«...\n")
+        self.print_Fin()
 #-----------------------------------------------------
