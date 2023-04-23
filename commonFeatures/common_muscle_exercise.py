@@ -8,6 +8,8 @@ Last modified: 2023-04-10
 @author: Dennis Krummacker
 '''
 
+import sys
+
 
 ## System Packages
 from builtins import object
@@ -86,7 +88,7 @@ class CommonMuscleExercise(object):
                 pass
             else:
                 globV.HCI.printErr("Malformed History for Muscle %s. Exiting..." % target.name)
-                exit()
+                sys.exit()
             if found_wo>=wo_toFind:
                 break
             i-=1
@@ -96,7 +98,7 @@ class CommonMuscleExercise(object):
     #------------------------------------------------------------------------------------------
     def history_push_schedule(self):
         self.history=self.history+self.schedule
-        self.schedule=[]
+        #self.schedule=[]
     @classmethod
     def history_push_schedule_all(cls,trgtList):
         [i.history_push_schedule() for i in trgtList]

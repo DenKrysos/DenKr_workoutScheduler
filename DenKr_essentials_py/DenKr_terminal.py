@@ -31,6 +31,10 @@ class DKTerminal(object):
     #------------------------------------------------------------------------------------------
     def set_out(self,trgtStream):
         self.sout=trgtStream
+    def set_in(self,trgtStream):
+        self.sin=trgtStream
+    def set_err(self,trgtStream):
+        self.serr=trgtStream
     def switch_out(self,trgtStream):
         self.soutBkp=self.sout
         self.sout=trgtStream

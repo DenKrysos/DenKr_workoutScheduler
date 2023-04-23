@@ -10,11 +10,18 @@ Last Update: 2023-04-16
 
 
 import tkinter as tk
+from tkinter import ttk
+import tkinter.font as tkfont
 
 
 
 ##Global Variables & HCI-struct of Output-Handling
 from settings import global_variables as globV
+
+
+from DenKr_essentials_py.Dev.pack_and_install import produce_exe_pyinstaller
+
+import settings.config_handler as cfghandle
 
 
 
@@ -73,7 +80,43 @@ class GUI_Operative_Functions:
         globV.HCI.switch_out(GUIObj.IOstream_query)
         globV.HCI.printStd("»Shall the history-files be updated with the recent computation?«",end="")
         globV.HCI.restore_out()
+    @classmethod
+    def set_exercise_names(cls,GUIObj):
+        GUIObj.state.exe_names=[sublist[0] for sublist in cfghandle.cfgSetup_rt[cfghandle.keySetupExe]]
+        GUIObj.state.exe_names.sort()
 
+
+def GUI_call_makeExe(GUIObj):
+    globV.HCI.printStd("Production of Bundled-Exe called.")
+    globV.HCI.printStd(f"Current Working-Directory:\n  -> {globV.progPath}\n")
+    GUIObj.root.update_idletasks()
+    #create a popup for safety query
+    displaytxt="You sure?\nThis'll create directories \"build\"&\"out\"\nparallel to current Working-Dir\n(see StdOut-Window)."
+    popup=tk.Toplevel(GUIObj.root)
+    popup.title('Produce Exe')
+    label=tk.Label(popup, text=displaytxt, font=('Helvetica', 12, tkfont.BOLD), bg='DarkOrange1', highlightthickness=0)
+    button_yes=ttk.Button(popup, style="Top.DK.TButton", width=10, text="Yes")
+    button_no=ttk.Button(popup, style="Top.DK.TButton", width=10, text="Cancel")
+    popupwidth=label.winfo_reqwidth()+40
+    popupheight=label.winfo_reqheight()+button_yes.winfo_reqheight()+30
+    x=GUIObj.widgets.text_stdout.winfo_rootx()+GUIObj.widgets.text_stdout.winfo_width()//2
+    y=GUIObj.widgets.text_stdout.winfo_rooty()+GUIObj.widgets.text_stdout.winfo_height()//4
+    popup.geometry('{}x{}+{}+{}'.format(popupwidth,popupheight,x-popupwidth//2,y-popupheight//2))
+    popup.config(bg='DarkOrange1')
+    # popup.attributes('-alpha', 0.8)
+    popup.grid_rowconfigure(0, weight=1)
+    popup.grid_columnconfigure(0, weight=1)
+    popup.grid_columnconfigure(1, weight=1)
+    label.grid(row=0,column=0, columnspan=2, padx=0, pady=(10,0), sticky=tk.NW+tk.E)
+    button_yes.grid(row=1,column=0, padx=0, pady=(0,10))
+    button_no.grid(row=1,column=1, padx=0, pady=(0,10))
+    def button_yes_func():
+        popup.destroy()
+        produce_exe_pyinstaller(GUIObj)
+    def button_no_func():
+        popup.destroy()
+    button_yes.configure(command=button_yes_func)
+    button_no.configure(command=button_no_func)
 
 
 

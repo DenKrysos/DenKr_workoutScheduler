@@ -36,22 +36,15 @@ from GUI.GUI_operative_functions import GUI_Operative_Functions as guif
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # TODO
-#- COnfig Option for "Volume-Scaling"
-#- Equipment-Cfg
-#- Muscle-Cfg
-#- Exe-Cfg
-#- Layout
-# - A Tab for "Dev-Tools"
-#    - pyinstaller?
+#
+# - In the Tab for "Dev-Tools"
 #    - "Temporary Switch to Terminal". Restarts App in Terminal-Mode
 #- Exercise Tutorial: Button that pops up a window in which Explanations for the Exercises are displayed about how they are performed. I.e. "What means this Exercise Name?"
 #- Have multiple "Muscle-Profiles". Like one for "Default", "appropriate volume", "slightly-reduced volume".
 #    This can serve to display different configuration to the customer, show that the shipped profile is a little too low in volume and what the optimum would be.
 #    Then one profile can be marked as "active". The pre-shipped can't be changed in value via GUI, but the "custom" one can for sure.
 #
-# For the Volume-Scaling:
-# Maybe, when scaling is on: Keep woPerWeek for the muscles. If it is off, calculate the share of which less exercise-slots per Week can be trained and then for each muscle multiply its woPerWeek with that, so that all nicely fits.
-#   That way, in that case, the woPerWeek for the muscles is used as a ration between the muscles. Maybe this lets the algorithm perform better.
+
 
 
 class DKWoSched_GUI(GUI_tkinter_Basic):
@@ -75,6 +68,7 @@ class DKWoSched_GUI(GUI_tkinter_Basic):
     #--------------------------------------------------------------------------
     def main_steps(self):
         globV.HCI.set_out(self.IOstream_std)
+        globV.HCI.set_err(self.IOstream_err)
         print_introduction()
         self.startup()
     def startup(self):
@@ -84,20 +78,26 @@ class DKWoSched_GUI(GUI_tkinter_Basic):
         self.workout=workout()
         self.workout.set()
         self.workout.history_read()
-        self.workout.compute_workoutSchedule()
-        self.IOstream_past.clear()
-        guif.print_previous_schedule(self)
-        guif.rewrite_computed_schedule(self)
-        guif.history_write_userPrompt(self)
+        err=self.workout.compute_workoutSchedule()
+        if 0==err:
+            self.IOstream_past.clear()
+            guif.print_previous_schedule(self)
+            guif.rewrite_computed_schedule(self)
+            guif.history_write_userPrompt(self)
+            return 0
+        else:
+            return 1
     #--------------------------------------------------------------------------
     def set_outStream_result(self,trgtwidget):
-        self.IOstream_result=GUI_IOStream(trgtwidget)
+        self.IOstream_result=GUI_IOStream(self,trgtwidget)
     def set_outStream_past(self,trgtwidget):
-        self.IOstream_past=GUI_IOStream(trgtwidget)
+        self.IOstream_past=GUI_IOStream(self,trgtwidget)
     def set_outStream_std(self,trgtwidget):
-        self.IOstream_std=GUI_IOStream(trgtwidget)
+        self.IOstream_std=GUI_IOStream(self,trgtwidget)
+    def set_outStream_err(self,trgtwidget):
+        self.IOstream_err=GUI_IOStream(self,trgtwidget,StreamType='err')
     def set_outStream_query(self,trgtwidget):
-        self.IOstream_query=GUI_IOStream(trgtwidget)
+        self.IOstream_query=GUI_IOStream(self,trgtwidget)
     def create_gui(self):
         #==========================================================================
         #--------------------------------------------------------------------------
@@ -107,6 +107,9 @@ class DKWoSched_GUI(GUI_tkinter_Basic):
         self.state=self.GUI_state()
         self.widgets=GUI_widgets()
         self.variables=GUI_variables()
+        #
+        guif.set_exercise_names(self)
+        #
         # Some Values to have common across multiple widgets
         textArea_padx=(5,0)
         textArea_pady=(5,0)
@@ -317,6 +320,7 @@ class DKWoSched_GUI(GUI_tkinter_Basic):
             # Operation
             # - - - - - - - - - - - - - - - - - - - - - -
             self.set_outStream_std(self.widgets.text_stdout)
+            self.set_outStream_err(self.widgets.text_stdout)
             self.set_outStream_past(self.widgets.text_out2)
             #
             return frame_stdout

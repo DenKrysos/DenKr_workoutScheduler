@@ -23,7 +23,7 @@ from DenKr_essentials_py.sort_search import search_sorted_list
 ##Global Variables & HCI-struct of Output-Handling
 from settings import global_variables as globV
 ##Workout-Scheduler Packages
-from settings.values import equipID, muscleID, useMeth
+from settings.values import equipID, muscleID, useMeth, SetupExeIdx
 ##Individual Configuration
 import settings.config_handler as cfghandle
 ##Fundamental Project Settings
@@ -35,6 +35,23 @@ from settings.path_and_file import (
     configSetup_file_prefix,
     configSetup_file_fname
 )
+
+
+
+def sort_exercises_muscleIntensity(exeArray):
+    for exe in exeArray:
+        exe[SetupExeIdx.INTENSITY].sort(key=lambda x: x[1], reverse=True)
+
+def clean_undefined_EnumEntries(cfgSetup):
+    for exercise in cfgSetup[cfghandle.keySetupExe]:
+        for i, val in enumerate(exercise[SetupExeIdx.EQUIPMENT]):
+            if val==equipID.undef:
+                exercise[SetupExeIdx.EQUIPMENT].pop(i)
+        for i, lst in enumerate(exercise[SetupExeIdx.INTENSITY]):
+            if lst[0]==muscleID.undef:
+                exercise[SetupExeIdx.INTENSITY].pop(i)
+
+
 
 
 
@@ -142,11 +159,13 @@ def configHandle_dumpPersistent(cfgObj,fName):
     os.rename(ffull_tmp,ffull)
 
 
+#This also clears away entries that are of Enum-Value "undefined"
 def configHandle_updateStorage():
     configHandle_dumpPersistent(
         cfghandle.cfg_handle,
         config_file_prefix+config_file_fname+config_file_fExt
     )
+    clean_undefined_EnumEntries(cfghandle.cfgSetup_handle)
     configHandle_dumpPersistent(
         cfghandle.cfgSetup_handle,
         configSetup_file_prefix+configSetup_file_fname+config_file_fExt
@@ -155,18 +174,17 @@ def configHandle_updateStorage():
 
 def flush_runtime_to_cfghandle():
     cfghandle.cfg_handle=copy.deepcopy(cfghandle.cfgh_rt)
+    cfghandle.cfgSetup_handle=copy.deepcopy(cfghandle.cfgSetup_rt)
 
 
 def writeBack_cfghandle_to_runtime():
     cfghandle.cfgh_rt=copy.deepcopy(cfghandle.cfg_handle)
+    cfghandle.cfgSetup_rt=copy.deepcopy(cfghandle.cfgSetup_handle)
 
 
 def cfg_runtime_writeThrough_storage():
     flush_runtime_to_cfghandle()
-    configHandle_dumpPersistent(
-        cfghandle.cfg_handle,
-        config_file_prefix+config_file_fname+config_file_fExt
-    )
+    configHandle_updateStorage()
 
 
 
@@ -243,6 +261,7 @@ def carryOver_entries_setupCfg(trgt,src):
 def configHandle_init():
     #No need to init "cfghandle.cfg_handle". Already done at declaration
     #No need to init "cfghandle.cfgSetup_handle". Already done at declaration
+    cfghandle.cfgSetup_handle=copy.deepcopy(cfghandle.cfgSetup_handle_inherent)
     convert_tuple_to_list(cfghandle.cfgSetup_handle)
     cfghandle.cfgSetup_handle[cfghandle.keySetupMuscle].sort(key=lambda x: x[0].value[0], reverse=False)
     cfghandle.cfgSetup_handle[cfghandle.keySetupExe].sort(key=lambda x: x[0], reverse=False)
@@ -255,12 +274,13 @@ def configHandle_setup():
         config_file_prefix+config_file_fname+config_file_fExt,
         carryOver_entries_basicCfg
     )
-    cfghandle.cfgh_rt=copy.deepcopy(cfghandle.cfg_handle)#Runtime Copy
     configHandle_readPersistent(
         cfghandle.cfgSetup_handle,
         configSetup_file_prefix+configSetup_file_fname+config_file_fExt,
         carryOver_entries_setupCfg
     )
+    sort_exercises_muscleIntensity(cfghandle.cfgSetup_handle[cfghandle.keySetupExe])
+    writeBack_cfghandle_to_runtime()#Runtime Copy
 
 
 

@@ -7,9 +7,13 @@ Created on 2023-04-15
 @author: Dennis Krummacker
 '''
 
+import sys
 import os
 import subprocess
 import pkg_resources
+
+
+from DenKr_essentials_py.Dev.bundle_state import check_whether_executedAsExe
 
 
 
@@ -49,13 +53,20 @@ def install_dependencies(fPath,fName):
 
 
 def assure_dependencies(fPath,fName):
+    if check_whether_executedAsExe():
+        #Don't check dependencies when running as exe, because the sole purpose of packing a onefile or onefolder app is to package everything together, right? So things should be already in place...
+        #  And also, pkg_resources doesn't really work inside a bundled exe
+        return
     not_installed=check_dependencies(fPath,fName)
     if 0<len(not_installed):
         #User Prompt
         inputtry=0
         while 1:
             print("==============================")
-            print("»Dependencies are missing. Shall I install them?« (y/n)")
+            print("»Dependencies are missing:«")
+            for line in not_installed:
+                print(f"   - {line}")
+            print("»Shall I install them?« (y/n)")
             inp=input()
             if inp=="y" or inp=="yes" or inp=="ja" or inp=="j" or inp=="1":
                 print(f"-> Calling 'python -m pip install -r' on {fName}.")
@@ -66,14 +77,14 @@ def assure_dependencies(fPath,fName):
                 print("-> NO Installation")
                 print("--> Exiting...")
                 #inputtry=3
-                exit(1)
+                sys.exit(1)
             else:
                 print("-> »Invalid Input.",end='')
                 inputtry+=1
                 if inputtry>=3:
                     print("«\n»Yeah, I propose we just cancel this...«\n")
                     print("--> Exiting...")
-                    exit(1)
+                    sys.exit(1)
                 else:
                     print(" Try again.«\n")
 

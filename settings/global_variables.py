@@ -8,10 +8,12 @@ Created on 2020-11-18
 '''
 
 
+import sys
 import os
 
 
 from DenKr_essentials_py.DenKr_terminal import DKTerminal
+from DenKr_essentials_py.Dev.bundle_state import check_whether_executedAsExe
 
 
 
@@ -43,3 +45,13 @@ def set_ProgramPath(mainFile__file__):
     progPath=os.path.realpath(mainFile__file__)
     progPath=os.path.dirname(progPath)
     #print('Path of Script: ', progPath)
+    if check_whether_executedAsExe():
+        progPath=os.path.dirname(sys.executable)
+
+
+def print_progPath():
+    if check_whether_executedAsExe():
+        scriptOrExe="Exe"
+    else:
+        scriptOrExe="Script"
+    HCI.printStd(f" (Path of {scriptOrExe}: {progPath}) [Here, the History is stored]")

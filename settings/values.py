@@ -15,6 +15,7 @@ from enum import Enum
 #-----------------------------------------------------
 # Muscle-Identifier
 class muscleID(Enum):
+    undef=[0,"<undefined>"]
     chest=[1,"Chest"]
     back=[2,"Back"]
     rotator_cuff=[3,"Rotator-Cuff"]
@@ -33,6 +34,7 @@ class muscleID(Enum):
 #-----------------------------------------------------
 # Equipment-Identifier
 class equipID(Enum):
+    undef=[0,"<undefined>"]
     Bodyweight=[1,"Bodyweight"]
     Sling=[2,"Sling"]
     ResistanceBand=[3,"Resistance-Band"]
@@ -44,6 +46,35 @@ class equipID(Enum):
     CablePull=[9,"Cable-Pull"]
     Gym=[10,"Gym"]
 #-----------------------------------------------------
+#=====================================================
+#=====================================================
+#-----------------------------------------------------
+class SetupExeIdx:
+    NAME=0
+    INHERENT=1
+    ENABLED=2
+    PRECEDENCE=3
+    EQUIPMENT=4
+    INTENSITY=5
+
+
+class BOILERPLATE:
+    @classmethod
+    def empty_exercise(cls):
+        empty_exercise=[
+            "<new>", 0, True,
+            1.0,
+            [
+                equipID.undef
+            ],
+            [
+                [
+                    muscleID.undef,
+                    1
+                ]
+            ]
+        ]
+        return empty_exercise
 
 
 

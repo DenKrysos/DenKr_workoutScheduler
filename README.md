@@ -1,6 +1,8 @@
 # DenKr_workoutScheduler
 
 
+- Instructions are printed by tool itself on Startup.
+
 It calculates a progressing schedule for your resistance-training workout, i.e. tells you in which order you may train your muscle-groups.
 
 In the defined class "workout" you may define your demands. That is, how many workouts you intend to do per week and how often per week individual muscles shall be attacked. The default should provide a solid setup for most people up to advanced. However, if you are very advanced you may need to adjust the volume and for sure your total workouts per week.
@@ -10,13 +12,24 @@ The tool stores the calculated schedule as a history in text-files and loads the
 Before writing the history (i.e. appending the newly computed workouts), you are prompted a query on the console whether the persistent history files shall be updated or not. You can use this to just lookup the last preceding computation without creating a new one and unintentionally messing with the history files.
 
 
+## GUI vs. Terminal
+
+The Tool comes equipped with a GUI to operate it. But it is also capable to work fully on Terminal.
+
+If you want to do so, look into the configuration Files and change the Value "UsageMethodology" to Terminal instead of GUI (which is the default setting).
+
+
 ## Configuration
 
 The tool can be configured to compute a workout schedule tailored to specific demands (e.g. adjusted to number of workouts per week, or which exercises are included).
 
-For that, consolidate the files in the directory "./_1cfg/".
+For that, consolidate the files in the directories "./_1cfg/" & "./0history/".
 
-Some Instruction on that is printed by the tools itself at the start of a run.
+The .py-Files (in ./_1cfg/) serve as Default-Values (and can of course only be changed when working with the source-Scripts, not when using the .exe). But after first start, .json-Files (in ./0history/) are created (initialized with the values from the .py-Files). Afterwards you can work with the .json-Files (both when working with Script or bundled-exe).
+
+But anyways, since by now the Tool has a GUI that allows to change the configuration, you might just want to use that method :).
+
+Some Instruction on that is printed by the tool itself at the start of a run.
 
 
 ##  Non-deterministic computation aka Random Component

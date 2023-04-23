@@ -8,6 +8,7 @@ Last Update: 2023-04-13
 @author: Dennis Krummacker
 '''
 
+import sys
 
 
 ## Some Fundamentals
@@ -42,6 +43,17 @@ from settings.values import muscleID
 ##Individual Configuration
 import settings.config_handler as cfghandle
 
+
+
+
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# TODO
+#
+#- For "Volume-Scaling": A better Threshold to determine when scaling should be performed
+#
+#- Add an extra Slot for Warm-Up?. Exercises like BW-Side-Lateral-Raise would fall into that. That slot can also be left empty by the computation, which gives the user so-to-speak freeroom to then have a warmup after own gusto.
+#   But with the occassional suggestion of explicit warmup exercises, it can be made sure that these exercises are done regularly, every now and then.
 
 
 
@@ -86,16 +98,36 @@ class workout(object):
     def set_phase2(self):
         #self.bigMuscle_precedence_tolerance=self.muscle_groups[0].malus*0.45
         self.bigMuscle_precedence_tolerance=0#Hem, I say, we calc this dynamically for every run on the position, where it is used
-        muscles_perWeek_total=0.0
-        i=0
-        while i<len(self.muscle_groups):
-            if self.muscle_groups[i].name!="glutes":#Because we assume that quads and glutes are most of the time trained in conjunction
-                muscles_perWeek_total+=self.muscle_groups[i].wo_pW
-            i+=1
-        #print(f"musperWeek {muscles_perWeek_total} | {muscles_perWeek_total/self.workouts_perWeek}")
-        self.muscles_per_workout=int(muscles_perWeek_total//self.workouts_perWeek)
+        #
+        def calc_muscles_per_workout():
+            muscles_perWeek_total=0.0
+            i=0
+            while i<len(self.muscle_groups):
+                if self.muscle_groups[i].name!="glutes":#Because we assume that quads and glutes are most of the time trained in conjunction
+                    muscles_perWeek_total+=self.muscle_groups[i].wo_pW
+                i+=1
+            #print(f"musperWeek {muscles_perWeek_total} | {muscles_perWeek_total/self.workouts_perWeek}")
+            muscPerWorkout=muscles_perWeek_total/self.workouts_perWeek
+            self.muscles_per_workout=int(muscles_perWeek_total//self.workouts_perWeek)
+            #Smoothen lacking float precision
+            delta=self.muscles_per_workout+1-muscPerWorkout
+            if 0<delta and 0.00001>abs(delta):
+                self.muscles_per_workout+=1
+            return muscles_perWeek_total
+        muscles_perWeek_total=calc_muscles_per_workout()
+        #
+        def muscle_volume_normalization():
+            musPerWorkoutFloat=muscles_perWeek_total/self.workouts_perWeek
+            normRatio=self.muscles_per_workout/musPerWorkoutFloat
+            for muscle in self.muscle_groups:
+                muscle.wo_pW*=normRatio
+        #
+        if not cfghandle.cfgh_rt[cfghandle.keyVolScal]:
+            muscle_volume_normalization()
+            muscles_perWeek_total=calc_muscles_per_workout()
+        #
         if self.muscles_per_workout!=4:
-            globV.HCI.printStd("Attention! A \"muscles_per_workout\" of other than 4 was calculated. You might want to have a look into that (maybe overwrite the value directly, after \"set_phase2()\"). For most cases, 4 muscles per workout is an appropriate amount/value. This tool afterwards allows a reasonable deviation from that anyway to adjust individual workouts to the urgency of muscle groups.")
+            globV.HCI.printStd(f"Attention! A \"muscles_per_workout\" of other than 4 was calculated ({muscles_perWeek_total/self.workouts_perWeek}). You might want to have a look into that (maybe overwrite the value directly, after \"set_phase2()\"). For most cases, 4 muscles per workout is an appropriate amount/value. This tool afterwards allows a reasonable deviation from that anyway to adjust individual workouts to the urgency of muscle groups.")
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def set_exercises(self):
         exercise.set_exercises(self.exercises,self.exercises_excluded)
@@ -511,7 +543,7 @@ class workout(object):
 #             indiv_muscle_c+=1
 #         else:
 #             globV.HCI.printStd("Bug detected in urgencyAdjust. Quads & Glutes are supposed to occur jointly. Exiting...")
-#             exit()
+#             sys.exit()
         
         pre_len=len(picked_pre)
         
@@ -860,9 +892,10 @@ class workout(object):
         #First at the very end ease-down or keep-up
         #Maximum +floor(50%) or -floor(30%) -- or maybe do a calculation for two levels of pressure. Low pressure results in 25% deviation and high pressure in 50%
         indiv_muscle_c=self.muscles_per_workout
-        #It is urgent, to train more, when a +self.muscles_per_workout to the total sum of credits after the current workout does not raise the average over 2
-        #On the other hand, we can slack down, when such an increase raises the average over 2+average(all_malus)
-        if False:
+        
+        def _volumeScaling(indiv_muscle_c):
+            #It is urgent, to train more, when a +self.muscles_per_workout to the total sum of credits after the current workout does not raise the average over 2
+            #On the other hand, we can slack down, when such an increase raises the average over 2+average(all_malus)
             credit_average=0
             malus_ave=0
             bonus_ave=0
@@ -876,7 +909,7 @@ class workout(object):
             malus_ave/=len(self.muscle_workingSet)
             bonus_ave/=len(self.muscle_workingSet)
             urgency_ave/=len(self.muscle_workingSet)
-            globV.HCI.printStd("AveCred %2.2f | AveUrg %2.2f - %2.2f - %2.2f"%(credit_average,urgency_ave,malus_ave,bonus_ave))
+            #globV.HCI.printStd("AveCred %2.2f | AveUrg %2.2f - %2.2f - %2.2f"%(credit_average,urgency_ave,malus_ave,bonus_ave))
             # if credit_average<=self.credit_center-malus_ave:
             if 1.0<=urgency_ave:
                 indiv_muscle_c+=1
@@ -885,6 +918,10 @@ class workout(object):
             elif -0.5>=urgency_ave:
                 indiv_muscle_c-=1
                 globV.HCI.printStd("Scaling down")
+            return indiv_muscle_c
+        #
+        if cfghandle.cfgh_rt[cfghandle.keyVolScal]:
+            indiv_muscle_c=_volumeScaling(indiv_muscle_c)
         
         picked=[]
         for i in range(0,self.muscles_per_workout,1):
@@ -915,7 +952,7 @@ class workout(object):
                     pass
                 else:
                     globV.HCI.printErr("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_workingSet[i].name)
-                    exit()
+                    sys.exit()
                 i+=1
         else:
             for i in range(0,self.muscles_per_workout,1):
@@ -925,7 +962,7 @@ class workout(object):
                     pass
                 else:
                     globV.HCI.printErr("Malformed Muscle Setup (muscle_class aka big vs. small) for %s. Exiting..." % self.muscle_workingSet[i].name)
-                    exit()
+                    sys.exit()
         #
         #self.debug_print_muscleList(picked)
         #Superset-Grouping
@@ -945,7 +982,7 @@ class workout(object):
             #Match all entries of the exercises Intensity-List to the corresponding muscle
             for jintensity in matchingExe.muscleIntensity:
                 for jmuscle in self.muscle_groups:
-                    if jmuscle.idx==jintensity[0]:
+                    if jmuscle.idx==jintensity[0].value[0]:
                         if len(jmuscle.schedule)<iteration:
                             jmuscle.schedule.append(jintensity[1])
                         else:
@@ -957,7 +994,7 @@ class workout(object):
             next_muscle=False
             for exei, iexercise in enumerate(self.exercise_workingSet):
                 for iintensity in iexercise.muscleIntensity:
-                    if iintensity[0]==matchMuscle.idx:
+                    if iintensity[0].value[0]==matchMuscle.idx:
                         if iintensity[1]>=exercise.servingThreshold:# (len(imuscle.schedule)<iteration or imuscle.schedule[iteration-1]<exercise.minimumServing*2/3)
                             _updateSchedule_wMatchingExe(matchMuscle,exei,iexercise)
                             next_muscle=True
@@ -991,7 +1028,7 @@ class workout(object):
                     bestDelta=100#Just to have something high
                     for exei, iexercise in enumerate(self.exercise_workingSet):
                         for iintensity in iexercise.muscleIntensity:
-                            if iintensity[0]==imuscle.idx:
+                            if iintensity[0].value[0]==imuscle.idx:
                                 if iintensity[1]>=exercise.servingThreshold:
                                     wouldResult=imuscle.schedule[iteration-1]+iintensity[1]
                                     desiredTargetDelta=0.5*(1-exercise.minimumServing)
@@ -1030,20 +1067,26 @@ class workout(object):
         self.compute_workoutSchedule_nextWorkout_arrange(iteration)
     def compute_workoutSchedule(self):
         #for _ in range(0, 5, 1):
-        for i in range(1, self.num_workout_toCompute+1, 1):
-            self.compute_workoutSchedule_nextWorkout(i)
+        try:
+            for i in range(1, self.num_workout_toCompute+1, 1):
+                self.compute_workoutSchedule_nextWorkout(i)
+        except IndexError:
+            globV.HCI.printErr("Insufficient Exercises. You may want to add some more Equipment-Capabilities.")
+            return 1
+        return 0
     #------------------------------------------------------------------------------------------
     def workoutScheduling_main(self):
         self.set()
         self.history_read()
         self.history_show_previousWorkoutSchedule_terminal()
-        self.compute_workoutSchedule()
-        self.history_show_computedWorkoutSchedule_terminal()
-        
-        self.push_schedule_toHistory()
-        
-        if self.history_write_userQuery():
-            self.history_write()
+        err=self.compute_workoutSchedule()
+        if 0<err:
+            self.history_show_computedWorkoutSchedule_terminal()
+            
+            self.push_schedule_toHistory()
+            
+            if self.history_write_userQuery():
+                self.history_write()
         
         self.print_Fin()
 #-----------------------------------------------------

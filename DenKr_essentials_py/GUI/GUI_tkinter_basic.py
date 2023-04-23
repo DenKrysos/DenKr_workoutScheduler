@@ -14,6 +14,8 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.font as tkfont
 # import tkinter.messagebox as tkmsgbox
+from queue import Queue
+import threading
 
 
 
@@ -65,6 +67,7 @@ class GUI_tkinter_Basic(object):
         self.ttkStyle=ttk.Style()
         self._theme_set()
         # Some Settings
+        self._register_functions()
         self._set_window_PosAndSize()
         # Call function to create GUI widgets
         self.create_gui()
@@ -81,10 +84,11 @@ class GUI_tkinter_Basic(object):
         # print(self.systemsDefaultFont)
         # print(self.systemsDefaultFont.actual())
         self.fontDefault=tkfont.nametofont("TkDefaultFont")# 'Helvetica', 'Courier', 'Segoe UI', 'Arial'
-        self.fontHeading1='helvetica'
-        self.fontHeading1_size=12
+        self.fontDefault_size=self.fontDefault.actual()['size']
         self.fontHeading2='Courier'
-        self.fontHeading2_size=10
+        self.fontHeading2_size=self.fontDefault_size+2
+        self.fontHeading1='helvetica'
+        self.fontHeading1_size=self.fontHeading2_size+2
     def _set_window_PosAndSize(self):
         self.screenX=self.root.winfo_screenwidth()
         self.screenY=self.root.winfo_screenheight()
@@ -146,6 +150,7 @@ class GUI_tkinter_Basic(object):
         )
         self.ttkStyle.configure("DK.TEntry", background=self.color_bg)
         self.ttkStyle.configure("DK.TRadiobutton", background=self.color_bg)
+        self.ttkStyle.configure("DK.TCombobox", background=self.color_bg, selectbackground='lightgray', selectforeground='black')
         self.ttkStyle.configure("Top.DK.TFrame", background=self.color_heading_bg)
         self.ttkStyle.configure("Top.DK.TButton", foreground='white', background='royal blue')
         self.ttkStyle.map('Top.DK.TButton',
@@ -164,7 +169,7 @@ class GUI_tkinter_Basic(object):
         self.ttkStyle.configure("Config.DK.TNotebook.Tab", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.map('Config.DK.TNotebook.Tab',
             background=[('selected', '!active', self.color_cfg_bg), ('selected', 'active', self.color_cfg_light), ('!selected', '!active', 'LightSkyBlue4'), ('!selected', 'active', 'SkyBlue3')],
-            foreground=[('!active', 'black'), ('active', 'black')],
+            foreground=[('selected', '!active', 'black'), ('selected', 'active', 'black'), ('!selected', '!active', 'gray90'), ('!selected', 'active', 'black')],
             focuscolor=[('disabled', 'black'), ('!disabled', 'black')],
         )
         self.ttkStyle.configure("Config.DK.TCheckbutton", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
@@ -172,7 +177,9 @@ class GUI_tkinter_Basic(object):
             background=[('!active', self.color_cfg_bg), ('active', self.color_cfg_light)],
         )
         self.ttkStyle.configure("Config.DK.TLabel", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
+        self.ttkStyle.configure("Italic.Config.DK.TLabel", font=(self.fontDefault, self.fontDefault_size+1, tkfont.ITALIC))
         self.ttkStyle.configure("Config.DK.TEntry", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
+        self.ttkStyle.configure("Error.Config.DK.TEntry", fieldbackground='red', foreground=self.color_cfg_foreground_light)
         self.ttkStyle.configure("Config.DK.TButton", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.map('Config.DK.TButton',
             background=[('!active', self.color_cfg_light), ('active', 'LightSkyBlue1')],
@@ -181,13 +188,32 @@ class GUI_tkinter_Basic(object):
             highlightcolor=[('focus', 'white'), ('!focus', 'white')],
             relief=[('pressed', 'sunken'), ('!pressed', 'raised')],
         )
+        self.ttkStyle.configure("Ridge.Config.DK.TButton", font=(self.fontDefault, self.fontDefault_size, tkfont.BOLD), padding=0, relief=tk.RIDGE)
+        self.ttkStyle.map('Ridge.Config.DK.TButton',
+            relief=[('pressed', 'groove'), ('!pressed', 'ridge')],# RAISED, RIDGE, GROOVE, SUNKEN, FLAT
+        )
+        self.ttkStyle.configure("Groove.Config.DK.TButton", font=(self.fontDefault, self.fontDefault_size, tkfont.BOLD), padding=0, relief=tk.GROOVE)
+        self.ttkStyle.map('Groove.Config.DK.TButton',
+            relief=[('pressed', 'ridge'), ('!pressed', 'groove')],# RAISED, RIDGE, GROOVE, SUNKEN, FLAT
+        )
+        self.ttkStyle.configure("Flat.Config.DK.TButton", font=(self.fontDefault, self.fontDefault_size, tkfont.ITALIC), padding=0, relief=tk.FLAT)
+        self.ttkStyle.map('Flat.Config.DK.TButton',
+            relief=[('pressed', 'sunken'), ('!pressed', 'flat')],# RAISED, RIDGE, GROOVE, SUNKEN, FLAT
+        )
         self.ttkStyle.configure("Config.DK.TRadiobutton", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.map('Config.DK.TRadiobutton',
             background=[('!active', self.color_cfg_bg), ('active', self.color_cfg_light)],
         )
+        self.ttkStyle.configure("Config.DK.TCombobox", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
+        self.ttkStyle.configure("Text.Config.DK.TLabel", background=self.color_cfg_text_bg, foreground=self.color_cfg_text_fg)
+        self.ttkStyle.configure("Heading1.Config.DK.TLabel", font="13", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.configure("TextContainer.DK.TFrame", background=self.color_txtArea_bg)
         self.ttkStyle.configure("Heading1.DK.TLabel", background=self.color_heading_bg, foreground='white', font=(self.fontHeading1, self.fontHeading1_size))
         self.ttkStyle.configure("Heading2.DK.TLabel", font=(self.fontHeading2, self.fontHeading2_size))
+    def _register_functions(self):
+        self.cmds=GUI_functions()
+        self.cmds.validate_decimal_input=self.root.register(self.validate_decimal_input)
+        self.cmds.validate_numeric_input=self.root.register(self.validate_numeric_input)
     # - - - - - - - - - - - - - - - - - - - - - - -
     #TODO: Transparent Image stuff for use as background not finished
     # For use as transparent background, Render an Image as temporary file
@@ -226,6 +252,8 @@ class GUI_tkinter_Basic(object):
         self.color_cfg_foreground_light='black'
         self.color_cfg_light='LightSkyBlue2'
         self.color_cfg_bg='LightSkyBlue3'
+        self.color_cfg_text_bg='DeepSkyBlue4'
+        self.color_cfg_text_fg='white'
         self.color_txtArea_bg='black',
         self.color_txtArea_fg='white',
         self.color_txtArea_selectbg="lightblue",
@@ -267,12 +295,12 @@ class GUI_tkinter_Basic(object):
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ## Output: Text-Widget
     @classmethod
-    def insert_to_text_widget(cls,trgtwidget,output):
+    def insert_to_text_widget(cls,trgtwidget,output,Tag="TkDefaultFont"):
         #curstate=trgtwidget['state']
         curstate=trgtwidget.cget('state')
         trgtwidget.configure(state=tk.NORMAL)
         # Append output to Text widget
-        trgtwidget.insert(tk.END, output)# + "\n"
+        trgtwidget.insert(tk.END, output, Tag)# + "\n"
         trgtwidget.configure(state=curstate)
         # Scroll to the bottom of the Text widget
         trgtwidget.see(tk.END)
@@ -364,32 +392,77 @@ class GUI_tkinter_Basic(object):
         # ok_button.pack()
         popup.after(2000, popup.destroy)  # Automatically close popup after 2 seconds
     #--------------------------------------------------------------------------
+    # Commands (Validation, ...)
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Validation function to allow only decimal (numeric with dot) input
+    @classmethod
+    def validate_decimal_input(cls, char, value):
+        if char.isdigit() or char == "." or char == "":
+            return True
+        else:
+            return False
+    # Validation function to allow only integer (whole integer) input
+    @classmethod
+    def validate_numeric_input(cls, char, value):
+        if char.isdigit() or char == "":
+            return True
+        else:
+            return False
+    #--------------------------------------------------------------------------
 
 
 class GUI_IOStream:
-    def __new__(cls,widget):
+    def __new__(cls,GUIObj,widget,StreamType='std'):
         if isinstance(widget,tk.Text):
-            return TextWidgetIOStream(widget)
             #return TextWidgetIOStream.__new__(TextWidgetIOStream,widget)
+            if 'std'==StreamType:
+                return TextWidgetIOStreamStd(GUIObj,widget)
+            elif 'err'==StreamType:
+                return TextWidgetIOStreamErr(GUIObj,widget)
+            else:
+                raise (tk.TclError,"Invalid StreamType, while instantiating GUI_IOStream.")
         elif isinstance(widget,ttk.Label):
-            return LabelWidgetIOStream(widget)
             #return LabelWidgetIOStream.__new__(LabelWidgetIOStream,widget)
+            if 'std'==StreamType:
+                return LabelWidgetIOStreamStd(GUIObj,widget)
+            elif 'err'==StreamType:
+                return LabelWidgetIOStreamErr(GUIObj,widget)
+            else:
+                raise (tk.TclError,"Invalid StreamType, while instantiating GUI_IOStream.")
         else:
             return None
 
 
-class TextWidgetIOStream:
-    def __init__(self, text_widget):
+
+class TextWidgetIOStreamGeneric:
+    def __init__(self, GUIObj, text_widget, TextFormattingTag):
         self.widget=text_widget
-    def write(self, text):
-        GUI_tkinter_Basic.insert_to_text_widget(self.widget, text)
-    def writelines(self, text):
+        self.Tag=TextFormattingTag#This is used to determine how the printed Text shall be formatted. A Child-Class of this shall define a Tag and pass this Tag-Name to super().__init__()
+        self.GUIObj=GUIObj
+        self.queueAcquireCount=0#How many times switch_to_queue() was called, i.e. how many entities need the queue mode
+        self.queue_sem=threading.Semaphore(1)
+    def write_direct(self, text, Tag=None):
+        if Tag is None:
+            Tag=self.Tag
+        GUI_tkinter_Basic.insert_to_text_widget(self.widget, text, Tag=Tag)
+    def write_queue(self, text):
+        self.queue.put(text)
+    def write(self, text, Tag=None):
+        self.queue_sem.acquire()
+        if hasattr(self,'queue'):
+            self.write_queue(text)
+        else:
+            self.write_direct(text,Tag)
+        self.queue_sem.release()
+    def writelines(self, text, Tag=None):
+        if Tag is None:
+            Tag=self.Tag
         if isinstance(text, str):
             GUI_tkinter_Basic.clear_text_widget(self.widget)
-            GUI_tkinter_Basic.insert_to_text_widget(self.widget, text)
+            GUI_tkinter_Basic.insert_to_text_widget(self.widget, text, Tag=Tag)
         elif isinstance(text, list) or isinstance(text, tuple):
             for line in text:
-                GUI_tkinter_Basic.insert_to_text_widget(self.widget, line)
+                GUI_tkinter_Basic.insert_to_text_widget(self.widget, line, Tag=Tag)
     def flush(self):
         pass# No-op, as flush is not required
     #Todo for both reads: Some kind of clearing the content of the widget.
@@ -401,10 +474,72 @@ class TextWidgetIOStream:
         return self.widget.get('1.0', tk.END).split('\n', 1)[0]
     def clear(self):
         GUI_tkinter_Basic.clear_text_widget(self.widget)
+    # For Multi-Threading use. The following enables to use the print functions across multiple threads (usually tkinter is not thread-safe, that's why).
+    # The "normal" write() is more performant and direct but freezes the program when trying to use multi-threaded.
+    # The "queued" write() adds more overhead and, if you want to say so, wastes power while busy polling
+    # The switching functions should be called from the main-thread. After switching to queued mode, the write() are safe to be called everywhere.
+    #  But I think, each should be safe calling from any thread
+    # Hence, I recommend to stay in the normal mode as long as no multi-threadin support is needed, then switch to queue mode and possibly switch back after the multi-threading phase finished, in case it is only temporarily
+    def process_queue(self):
+        self.queue_sem.acquire()
+        try:
+            if not self.queue.empty():
+                text=self.queue.get()
+                self.write_direct(text)
+                self.GUIObj.root.update_idletasks()
+        except:
+            pass
+        if hasattr(self,'queue'):
+            if not self.queue.empty():
+                self.GUIObj.root.after(0,self.process_queue)
+            else:
+                if 0<self.queueAcquireCount:
+                    self.GUIObj.root.after(500,self.process_queue)
+                elif 0==self.queueAcquireCount:
+                    del self.queue
+                else:
+                    raise (tk.TclError,"DenKr GUI Stream Object went corrupted for \"queueAcquireCount\"")
+                    self.queue_sem.release()
+                    return
+        else:
+            if 0<self.queueAcquireCount:
+                raise (tk.TclError,"DenKr GUI Stream Object went corrupted: Has no Queue while in \"Queued-Mode\"")
+                self.queue_sem.release()
+                return
+            pass
+        self.queue_sem.release()
+    def switch_to_queueMode(self):
+        self.queue_sem.acquire()
+        self.queueAcquireCount+=1
+        if not hasattr(self,'queue'):
+            self.queue=Queue()
+        self.queue_sem.release()
+        self.GUIObj.root.after(500,self.process_queue)
+    def switch_to_directMode(self):
+        self.queue_sem.acquire()
+        self.queueAcquireCount-=1
+        self.queue_sem.release()
 
-class LabelWidgetIOStream:
-    def __init__(self, label_widget):
+class TextWidgetIOStreamStd(TextWidgetIOStreamGeneric):
+    def __init__(self, GUIObj, text_widget):
+        super().__init__(GUIObj, text_widget,'TkDefaultFont')
+
+class TextWidgetIOStreamErr(TextWidgetIOStreamGeneric):
+    def __init__(self, GUIObj, text_widget):
+        super().__init__(GUIObj, text_widget,'err')
+        # create a Tag to print with a specific foreground color
+        text_widget.tag_configure("err", foreground="red")
+    def read(self, size=None):
+        raise (tk.TclError,"this stream can only be used for output")
+    def readline(self, size=None):
+        raise (tk.TclError,"this stream can only be used for output")
+
+# - - - - - - - - - - - - - - -
+
+class LabelWidgetIOStreamGeneric:
+    def __init__(self, GUIObj, label_widget):
         self.widget=label_widget
+        self.GUIObj=GUIObj
     def write(self, text):
         GUI_tkinter_Basic.insert_to_label_widget(self.widget, text)
     def writelines(self, text):
@@ -423,6 +558,19 @@ class LabelWidgetIOStream:
     def clear(self):
         GUI_tkinter_Basic.clear_label_widget(self.widget)
 
+class LabelWidgetIOStreamStd(LabelWidgetIOStreamGeneric):
+    def __init__(self, GUIObj, label_widget):
+        super().__init__(GUIObj,label_widget)
+
+class LabelWidgetIOStreamErr(LabelWidgetIOStreamGeneric):
+    '''
+    Keep in mind that you cannot have something like a "Shared Label Widget for 'normal' & 'error' output, since Labels don't support Text of different color.
+    Hence, once a widget is configured as "Error-Stream-Widget" its foreground color is set to 'red'.
+    '''
+    def __init__(self, GUIObj, label_widget):
+        super().__init__(GUIObj,label_widget)
+        self.widget.configure(foreground='red')
+
 
 
 
@@ -438,6 +586,11 @@ class GUI_widgets:
     def __init__(self):
         pass
 class GUI_variables:
+    """Some Variables are used across several widgets/commands. So they need to be made accessable/visible (at least temporary in some local scope)."""
+    """ Store them in some instance of this."""
+    def __init__(self):
+        pass
+class GUI_functions:
     """Some Variables are used across several widgets/commands. So they need to be made accessable/visible (at least temporary in some local scope)."""
     """ Store them in some instance of this."""
     def __init__(self):

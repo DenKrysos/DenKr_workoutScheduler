@@ -55,6 +55,8 @@ upcomingOutput_Reverse=False
 workouts_perWeek=3.5
 #- How many Workouts shall be computet per run. DEFAULT: int(workouts_perWeek*2)
 num_workout_toCompute=int(workouts_perWeek*2)
+#- Shall the Schedule be allowed to scale up/down, i.e. include one muscle more or less per workout in case required. This can occur, when you configured a sum for all muscle-slots per week that's higher than the computed total workout slots per Week (which is rounded to an integer).
+volumeScaling=False
 #=================================================
 
 

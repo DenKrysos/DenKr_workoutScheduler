@@ -53,6 +53,14 @@ requirements_path="settings"
 
 
 #-----------------------------------------------------
+Executable_Name="DenKr_workoutScheduler"
+#-----------------------------------------------------
+
+
+
+
+
+#-----------------------------------------------------
 # Update also this, in case of adding, removing or changing a History- or persistent Config-File:
 history_files_all={
     history_file_prefix_muscle+history_file_fname_muscle+history_file_fExt,

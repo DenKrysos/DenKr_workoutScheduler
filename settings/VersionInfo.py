@@ -8,8 +8,8 @@ Created on 2023-04-11
 '''
 
 VERSION_DevStage="beta"
-VERSION_ReleaseTrack="Preview"
-VERSION_ReleaseTrackMAJOR=1
+# VERSION_ReleaseTrack="Preview"
+# VERSION_ReleaseTrackMAJOR=1
 VERSION_MAJOR=0
 VERSION_MINOR=4
 VERSION_PATCH=0

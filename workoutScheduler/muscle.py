@@ -112,7 +112,7 @@ class muscle(CommonMuscleExercise):
         trgtArr[len(trgtArr)-1].set_attributes(wo_perWeek_total,idx,name,muscletype,wo_perWeek,sets_perWeek)
     @classmethod
     def set_muscles(cls,trgtArr,wo_perWeek_total):
-        for ident, bigOrSmall, workouts, sets in cfghandle.cfgSetup_handle[cfghandle.keySetupMuscle]:
+        for ident, bigOrSmall, workouts, sets in cfghandle.cfgSetup_rt[cfghandle.keySetupMuscle]:
             cls._add_muscle(trgtArr,wo_perWeek_total,ident.value[0],ident.value[1],bigOrSmall,workouts,sets)
     #------------------------------------------------------------------------------------------
     #The History for a muscle stores to which Intensity it was trained (which is depending on the scheduled exercise)
@@ -145,7 +145,7 @@ class muscle(CommonMuscleExercise):
                     self.credit+=joined_history[i]*self.bonus
                 # else:
                 #     globV.HCI.printErr("Malformed History while Credit calculation. Exiting...")
-                #     exit()
+                #     sys.exit()
                 i-=1
     @classmethod
     def derive_credit_fromHistory_all(cls,trgtArray,credit_center):
@@ -166,7 +166,7 @@ class muscle(CommonMuscleExercise):
                     break;
                 # else:
                 #     globV.HCI.printErr("Malformed History while Credit calculation. Exiting...")
-                #     exit()
+                #     sys.exit()
                 i-=1
         rest_supposed=(wo_perWeek_total-self.wo_pW)/self.wo_pW
         rest_ratio=rest_period/rest_supposed
