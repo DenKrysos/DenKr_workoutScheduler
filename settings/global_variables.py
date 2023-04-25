@@ -19,6 +19,7 @@ from DenKr_essentials_py.Dev.bundle_state import check_whether_executedAsExe
 
 
 progPath=None
+inherentDataFilePath=None
 
 # "Human-Computer-Interface". Handles, where output is going and input is taken from
 HCI=DKTerminal()
@@ -34,6 +35,7 @@ def set_ProgramPath(mainFile__file__):
         global_variables.set_ProgramPath(__file__)
     '''
     global progPath
+    global inherentDataFilePath
     #print('sys.argv[0] =', sys.argv[0])
     #progPath = os.path.dirname(sys.argv[0])
     #print('path =', progPath)
@@ -42,11 +44,16 @@ def set_ProgramPath(mainFile__file__):
     #print('realpath = ', progPath)
     #progPath = os.path.dirname(progPath)
     #print('realpath = ', progPath)
-    progPath=os.path.realpath(mainFile__file__)
-    progPath=os.path.dirname(progPath)
+    #progPath=os.path.realpath(mainFile__file__)
+    #progPath=os.path.dirname(progPath)
     #print('Path of Script: ', progPath)
     if check_whether_executedAsExe():
         progPath=os.path.dirname(sys.executable)
+    else:
+        progPath=os.path.realpath(mainFile__file__)
+        progPath=os.path.dirname(progPath)
+    inherentDataFilePath=os.path.realpath(mainFile__file__)
+    inherentDataFilePath=os.path.dirname(inherentDataFilePath)
 
 
 def print_progPath():

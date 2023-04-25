@@ -7,6 +7,7 @@ Created on 2020-11-18
 @author: Dennis Krummacker
 '''
 
+
 #=======================================================
 # in case of adding, removing or changing a History- or persistent Config-File:
 #  --> Look at the very bottom of this file
@@ -41,11 +42,25 @@ configSetup_file_fname="config_setup"
 
 
 
+#-----------------------------------------------------
+GUI_cfg_file_path=history_file_subpath
+GUI_cfg_file_fExt=".json"
+# - - - - - - -
+GUI_cfg_file_prefix="3_1-"
+GUI_cfg_file_fName="GUI_cfg"
+#-----------------------------------------------------
+
+
+
+
 
 #-----------------------------------------------------
 requirements_fName_plain="requirements_plain.txt"
 requirements_fName_GUI="requirements_GUI.txt"
 requirements_path="settings"
+# - - - - - - - - - - - - - -
+ico_fName="DenKr.ico"
+ico_path="GUI"
 #-----------------------------------------------------
 
 
@@ -66,6 +81,7 @@ history_files_all={
     history_file_prefix_muscle+history_file_fname_muscle+history_file_fExt,
     history_file_prefix_exercise+history_file_fname_exercise+history_file_fExt,
     config_file_prefix+config_file_fname+config_file_fExt,
-    configSetup_file_prefix+configSetup_file_fname+config_file_fExt
+    configSetup_file_prefix+configSetup_file_fname+config_file_fExt,
+    GUI_cfg_file_prefix+GUI_cfg_file_fName+GUI_cfg_file_fExt
 }
 #-----------------------------------------------------

@@ -134,8 +134,8 @@ def names_to_enum_forVal(val):
 
 
 #This converts the Enum Keys upfront
-def configHandle_dumpPersistent(cfgObj,fName):
-    fpath=os.path.join(globV.progPath,config_file_subpath)
+def configHandle_dumpPersistent(cfgObj,pathSub,fName):
+    fpath=os.path.join(globV.progPath,pathSub)
     ffull_tmp=os.path.join(fpath,fName+".tmp")
     ffull=os.path.join(fpath,fName)
     convertedDat=convert_keyAndVal(cfgObj,enum_names_forKey,enum_names_forVal)
@@ -163,11 +163,13 @@ def configHandle_dumpPersistent(cfgObj,fName):
 def configHandle_updateStorage():
     configHandle_dumpPersistent(
         cfghandle.cfg_handle,
+        config_file_subpath,
         config_file_prefix+config_file_fname+config_file_fExt
     )
     clean_undefined_EnumEntries(cfghandle.cfgSetup_handle)
     configHandle_dumpPersistent(
         cfghandle.cfgSetup_handle,
+        config_file_subpath,
         configSetup_file_prefix+configSetup_file_fname+config_file_fExt
     )
 
@@ -193,8 +195,8 @@ def cfg_runtime_writeThrough_storage():
 
 
 
-def configHandle_readPersistent(cfgObj,fName,carryOverFunc):
-    fpath=os.path.join(globV.progPath,config_file_subpath)
+def configHandle_readPersistent(cfgObj,pathSub,fName,carryOverFunc):
+    fpath=os.path.join(globV.progPath,pathSub)
     ffull=os.path.join(fpath,fName)
     try:
         f=open(ffull, mode='r', encoding = 'utf-8')
@@ -202,13 +204,14 @@ def configHandle_readPersistent(cfgObj,fName,carryOverFunc):
         try:
             readDat=json.load(f)
         except json.decoder.JSONDecodeError:
-            return
+            return 2
         f.close()
     except FileNotFoundError:
-        configHandle_dumpPersistent(cfgObj,fName)
-        return
+        configHandle_dumpPersistent(cfgObj,pathSub,fName)
+        return 1
     revertedDat=convert_keyAndVal(readDat, names_to_enum_forKey, names_to_enum_forVal)
     carryOverFunc(cfgObj,revertedDat)
+    return 0
 # - - - - - - - - - - - - - - -
 def carryOver_entries_basicCfg(trgt,src):
     for k, v in trgt.items():
@@ -271,11 +274,13 @@ def configHandle_setup():
     configHandle_init()
     configHandle_readPersistent(
         cfghandle.cfg_handle,
+        config_file_subpath,
         config_file_prefix+config_file_fname+config_file_fExt,
         carryOver_entries_basicCfg
     )
     configHandle_readPersistent(
         cfghandle.cfgSetup_handle,
+        config_file_subpath,
         configSetup_file_prefix+configSetup_file_fname+config_file_fExt,
         carryOver_entries_setupCfg
     )

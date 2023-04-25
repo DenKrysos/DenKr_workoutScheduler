@@ -31,12 +31,13 @@ from DenKr_essentials_py.GUI.GUI_tkinter_basic import GUI_variables, GUI_widgets
 from DenKr_essentials_py.GUI.GUI_tkinter_elements import create_themeSelect_frame
 from DenKr_essentials_py.order_tidyness import remove_pycache
 from DenKr_essentials_py.sort_search import search_sorted_list
+from DenKr_essentials_py.GUI.GUI_assissting import KEY_GUICfgH
 
 ##Other Files for Project
 ##Workout-Scheduler Packages
 import settings.config_handler as cfghandle
 from GUI.GUI_operative_functions import GUI_Operative_Functions as guif
-from GUI.GUI_operative_functions import GUI_call_makeExe
+from GUI.GUI_operative_functions import GUI_call_makeExe, GUI_call_moveExe
 from auxiliary.config_handling import cfg_runtime_writeThrough_storage, writeBack_cfghandle_to_runtime, configHandle_setup
 from settings.values import equipID, muscleID, SetupExeIdx
 from settings.values import BOILERPLATE as valuesBP
@@ -301,7 +302,7 @@ def create_cfg_area(GUIObj):
                 def on_calendar_update(*args):
                     GUIObj.variables.cfgTabBasic.calendarRadio_var.set('cal')
                 calendarContainer=ttk.Frame(subFrameCal, style="Config.DK.TFrame")
-                calendar_label=ttk.Label(calendarContainer, style="Config.DK.TLabel", text="Date in Schedule:")
+                calendar_label=ttk.Label(calendarContainer, style="Heading2.Config.DK.TLabel", text="Date in Schedule:")
                 GUIObj.variables.cfgTabBasic.calendarRadio_var=tk.StringVar()
                 calendarRButt_gen=ttk.Radiobutton(calendarContainer, style="Config.DK.TRadiobutton", text="Generic", variable=GUIObj.variables.cfgTabBasic.calendarRadio_var, value="gen", command=on_calendarRadio_select)
                 calendarRButt_cal=ttk.Radiobutton(calendarContainer, style="Config.DK.TRadiobutton", text="Calendar", variable=GUIObj.variables.cfgTabBasic.calendarRadio_var, value="cal", command=on_calendarRadio_select)
@@ -337,7 +338,29 @@ def create_cfg_area(GUIObj):
                 # Element definition
                 # - - - - - - - - - - - - - - - - - - - - - -
                 subFrameEquipCfg=ttk.Frame(tab_cfgBasic, style="Config.DK.TFrame")
-                row=0
+                # - - - - - - - - -
+                equipCfg_label_frame=ttk.Frame(subFrameEquipCfg, style="Config.DK.TFrame")
+                equipCfg_label=ttk.Label(equipCfg_label_frame,style="Heading2.Config.DK.TLabel",text="Equipment Capabilities:")
+                equipCfg_helpButton=ttk.Button(equipCfg_label_frame, style="Config.DK.TButton", text="?")
+                #
+                def on_equipCfg_helpButton(event):
+                    globV.HCI.printStd("")
+                    globV.HCI.printStd("Equipment Capabilities:")
+                    globV.HCI.printStd("- This tells, which equipment capabilities you have at your disposal to carry out your workout.")
+                    globV.HCI.printStd("- The same values can be set for each exercise, where it is to be understood as \"Enabling Equipment\": Equipment that is required to perform the exercise, in the sense that having access to it grants you the capability to do.")
+                    globV.HCI.printStd("    Multiple can be set simultaneously per exercise, where they are logically linked as \"or\", meaning that having one is sufficient (and not all together are required).")
+                    globV.HCI.printStd("So here you select what you got and only exercises that are enabled by that equipments are included into the computation.")
+                    globV.HCI.printStd("")
+                equipCfg_helpButton.bind("<ButtonRelease-1>", on_equipCfg_helpButton)
+                #
+                equipCfg_label_frame.columnconfigure(0, weight=1)
+                equipCfg_label.grid(row=0,column=0,sticky=tk.NW)
+                equipCfg_helpButton.grid(row=0,column=1,sticky=tk.E)
+                equipCfg_label_frame.grid(row=0,column=0,columnspan=2,pady=(0,0),sticky=tk.NW+tk.E)
+                # - - - - - - - - -
+                subFrameEquipCfg.columnconfigure(0, weight=0)
+                subFrameEquipCfg.columnconfigure(1, weight=1)
+                row=1
                 col=0
                 GUIObj.variables.cfgTabBasic.equipCfg_vars={}
                 def update_equipCfg(key):
@@ -349,9 +372,9 @@ def create_cfg_area(GUIObj):
                     GUIObj.variables.cfgTabBasic.equipCfg_vars[key].set(val)
                     volumeScal_checkbox=ttk.Checkbutton(subFrameEquipCfg, style="Config.DK.TCheckbutton", variable=GUIObj.variables.cfgTabBasic.equipCfg_vars[key])
                     volumeScal_checkbox.configure(command=lambda k=key:update_equipCfg(k))
-                    equipCfg_label.grid(row=row,column=col,sticky=tk.W)
+                    equipCfg_label.grid(row=row,column=col,sticky=tk.E)
                     col+=1
-                    volumeScal_checkbox.grid(row=row,column=col)
+                    volumeScal_checkbox.grid(row=row,column=col,padx=(5,0),sticky=tk.W)
                     row+=1
                     col=0
                 return subFrameEquipCfg
@@ -364,6 +387,18 @@ def create_cfg_area(GUIObj):
                 # Element definition
                 # - - - - - - - - - - - - - - - - - - - - - -
                 subFrameLayout=ttk.Frame(tab_cfgBasic, style="Config.DK.TFrame")
+                wordWrap_label=ttk.Label(subFrameLayout, style="Config.DK.TLabel", text="StdOut Word-Wrap:")
+                wordWrap_var=tk.BooleanVar()
+                wordWrap_checkbox=ttk.Checkbutton(subFrameLayout, style="Config.DK.TCheckbutton", variable=wordWrap_var)
+                #
+                retainWinGeo_label=ttk.Label(subFrameLayout, style="Config.DK.TLabel", text="Retain Window-Geo:")
+                retainWinGeo_var=tk.BooleanVar()
+                retainWinGeo_checkbox=ttk.Checkbutton(subFrameLayout, style="Config.DK.TCheckbutton", variable=retainWinGeo_var)
+                #
+                retainWinGeo_helpButton=ttk.Button(subFrameLayout, style="Config.DK.TButton", text="?")
+                #--------------------------------------------
+                # Element Configuration
+                # - - - - - - - - - - - - - - - - - - - - - -
                 def change_wordWrap():
                     select=wordWrap_var.get()
                     if select:
@@ -371,12 +406,6 @@ def create_cfg_area(GUIObj):
                     else:
                         GUIObj.state.stdOut_wordWrap=tk.NONE
                     GUIObj.widgets.text_stdout.configure(wrap=GUIObj.state.stdOut_wordWrap)
-                wordWrap_label=ttk.Label(subFrameLayout, style="Config.DK.TLabel", text="StdOut Word-Wrap:")
-                wordWrap_var=tk.BooleanVar()
-                wordWrap_checkbox=ttk.Checkbutton(subFrameLayout, style="Config.DK.TCheckbutton", variable=wordWrap_var)
-                #--------------------------------------------
-                # Element Configuration
-                # - - - - - - - - - - - - - - - - - - - - - -
                 if tk.WORD==GUIObj.state.stdOut_wordWrap:
                     wordWrap_var.set(True)
                 else:#tk.NONE
@@ -384,9 +413,26 @@ def create_cfg_area(GUIObj):
                 wordWrap_checkbox.configure(
                     command=change_wordWrap
                 )
+                #
+                retainWinGeo_var.set(GUIObj.cfgHandle_rt[KEY_GUICfgH.RetainGeometry])
+                def on_retainWinGeo_change(*args):
+                    selectVal=retainWinGeo_var.get()
+                    GUIObj.cfgHandle_rt[KEY_GUICfgH.RetainGeometry]=selectVal
+                    GUIObj.cfgHandle_changed=True
+                retainWinGeo_var.trace('w',on_retainWinGeo_change)
+                #
+                def on_retainWinGeo_helpButton(event):
+                    globV.HCI.printStd("")
+                    globV.HCI.printStd("»Retain Window Geometry«")
+                    globV.HCI.printStd("- A mere Window/GUI Layout Option.")
+                    globV.HCI.printStd("-> If checked, the window memorizes its Geometry (Size and Position) on Closing and restores them on next startup.")
+                    globV.HCI.printStd("-> If disabled, the window starts up with a default size centered on the screen.")
+                    globV.HCI.printStd("")
+                retainWinGeo_helpButton.bind("<ButtonRelease-1>", on_retainWinGeo_helpButton)
                 #--------------------------------------------
                 # Packing & Grid Config
                 # - - - - - - - - - - - - - - - - - - - - - -
+                subFrameLayout.columnconfigure(2, weight=1)
                 row=0
                 col=0
                 wordWrap_label.grid(row=row, column=col, padx=(0,10), pady=(0,0), sticky=tk.E)
@@ -394,6 +440,12 @@ def create_cfg_area(GUIObj):
                 wordWrap_checkbox.grid(row=row, column=col, padx=0, pady=(0,0), sticky=tk.W)
                 row+=1
                 col=0
+                retainWinGeo_label.grid(row=row, column=col, padx=(0,10), pady=(0,0), sticky=tk.E)
+                col+=1
+                retainWinGeo_checkbox.grid(row=row, column=col, padx=0, pady=(0,0), sticky=tk.W)
+                col+=1
+                retainWinGeo_helpButton.grid(row=row, column=col, padx=(0,0), pady=(0,0), sticky=tk.E)
+                #
                 return subFrameLayout
             subFrame_Layout=create_subFrame_layoutAdjust()
             #
@@ -445,7 +497,7 @@ def create_cfg_area(GUIObj):
             calendarSep.pack(side=tk.TOP, fill=tk.X, pady=15)
             subFrame_Calendar.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(0,0))
             equipCfgSep=ttk.Separator(tab_cfgBasic, orient=tk.HORIZONTAL)
-            equipCfgSep.pack(side=tk.TOP, fill=tk.X, pady=15)
+            equipCfgSep.pack(side=tk.TOP, fill=tk.X, pady=(15,10))
             subFrameEquipCfg.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(0,0))
             layoutSep=ttk.Separator(tab_cfgBasic, orient=tk.HORIZONTAL)
             layoutSep.pack(side=tk.TOP, fill=tk.X, pady=15)
@@ -1312,48 +1364,62 @@ def create_cfg_area(GUIObj):
         # Tab: Dev Tools
         def create_cfgTab_DevTools():
             tab_devTools=ttk.Frame(cfgTabs, style="Config.DK.TFrame")
-            def create_subFrame_clear():
-                subFrame_clear=ttk.LabelFrame(tab_devTools, style="Config.DK.TLabelframe", text='Clear')
-                button_pycache=ttk.Button(subFrame_clear, style="Config.DK.TButton", width=10, text="Pycache")
-                #--------------------------------------------
-                # Element Configuration
-                # - - - - - - - - - - - - - - - - - - - - - -
-                button_pycache.configure(
-                    command=lambda:remove_pycache(globV.progPath)
-                )
-                #--------------------------------------------
-                # Packing & Grid Config
-                # - - - - - - - - - - - - - - - - - - - - - -
-                button_pycache.pack(side=tk.TOP, padx=10, pady=(0,5))
-                return subFrame_clear
-            subFrame_clear=create_subFrame_clear()
-            def create_subFrame_makeExe():
-                subFrame_makeExe=ttk.LabelFrame(tab_devTools, style="Config.DK.TLabelframe", text='Produce Exe')
-                button_makeExe=ttk.Button(subFrame_makeExe, style="Config.DK.TButton", width=10, text="PyInstaller")
-                #--------------------------------------------
-                # Element Configuration
-                # - - - - - - - - - - - - - - - - - - - - - -
-                button_makeExe.configure(
-                    command=lambda:GUI_call_makeExe(GUIObj)
-                )
-                #--------------------------------------------
-                # Packing & Grid Config
-                # - - - - - - - - - - - - - - - - - - - - - -
-                button_makeExe.pack(side=tk.TOP, padx=10, pady=(0,5))
-                return subFrame_makeExe
-            subFrame_makeExe=create_subFrame_makeExe()
+            #
+            def create_subFrame_fileButtons():
+                subFrame_fileButtons=ttk.Frame(tab_devTools, style="Config.DK.TFrame")
+                def create_subFrame_clear():
+                    subFrame_clear=ttk.LabelFrame(subFrame_fileButtons, style="Config.DK.TLabelframe", text='Clear')
+                    button_pycache=ttk.Button(subFrame_clear, style="Config.DK.TButton", width=10, text="Pycache")
+                    #--------------------------------------------
+                    # Element Configuration
+                    # - - - - - - - - - - - - - - - - - - - - - -
+                    button_pycache.configure(
+                        command=lambda:remove_pycache(globV.progPath)
+                    )
+                    #--------------------------------------------
+                    # Packing & Grid Config
+                    # - - - - - - - - - - - - - - - - - - - - - -
+                    button_pycache.pack(side=tk.TOP, padx=5, pady=(0,5))
+                    return subFrame_clear
+                subFrame_clear=create_subFrame_clear()
+                def create_subFrame_makeExe():
+                    subFrame_makeExe=ttk.LabelFrame(subFrame_fileButtons, style="Config.DK.TLabelframe", text='Produce Exe')
+                    button_makeExe=ttk.Button(subFrame_makeExe, style="Config.DK.TButton", width=10, text="PyInstaller")
+                    button_moveExe=ttk.Button(subFrame_makeExe, style="Config.DK.TButton", width=10, text="MoveExe")
+                    #--------------------------------------------
+                    # Element Configuration
+                    # - - - - - - - - - - - - - - - - - - - - - -
+                    button_makeExe.configure(
+                        command=lambda:GUI_call_makeExe(GUIObj)
+                    )
+                    button_moveExe.configure(
+                        command=lambda:GUI_call_moveExe(GUIObj)
+                    )
+                    #--------------------------------------------
+                    # Packing & Grid Config
+                    # - - - - - - - - - - - - - - - - - - - - - -
+                    button_makeExe.pack(side=tk.TOP, padx=5, pady=(0,5))
+                    button_moveExe.pack(side=tk.TOP, padx=5, pady=(0,5))
+                    return subFrame_makeExe
+                subFrame_makeExe=create_subFrame_makeExe()
+                #
+                subFrame_clear.grid(row=0,column=0,sticky=tk.NE)
+                subFrame_makeExe.grid(row=1,column=0,sticky=tk.NE)
+                #
+                return subFrame_fileButtons
+            subFrame_fileButtons=create_subFrame_fileButtons()
+            #
             themeSelection=create_themeSelect_frame(GUIObj,tab_devTools)
             #--------------------------------------------
             # Packing & Grid Config (Tab Cfg-Basic)
             # - - - - - - - - - - - - - - - - - - - - - -
+            tab_devTools.columnconfigure(0, weight=1)
+            tab_devTools.columnconfigure(1, weight=1)
             row=0
             col=0
-            subFrame_clear.grid(row=row, column=col, padx=(5,0), pady=(5,0))
+            themeSelection.grid(row=row, column=col, padx=(5,0), pady=(10,0))
             col+=1
-            subFrame_makeExe.grid(row=row, column=col, padx=(5,0), pady=(5,0))
-            row+=1
-            col=0
-            themeSelection.grid(row=row, column=col, padx=10, pady=(10,0))
+            subFrame_fileButtons.grid(row=row, column=col, padx=(5,5), pady=(5,0), sticky=tk.NE)
             row+=1
             col=0
             #--------------------------------------------

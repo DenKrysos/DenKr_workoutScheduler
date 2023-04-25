@@ -16,7 +16,10 @@ import threading
 
 ##Global Variables & HCI-struct of Output-Handling
 from settings import global_variables as globV
-from settings.VersionInfo import VERSION_DESCRIPTION
+
+from settings.path_and_file_exe import exePaths
+
+from auxiliary.filesystem import _assure_Dirs_exist
 
 
 
@@ -33,34 +36,35 @@ def produce_exe_pyinstaller(GUIObj):
 #Todo: As soon as this is used for a second project: Adjust it to be more generalized, pass the main-File, Program-Name and additional-data-files as arguments or something.
 def produce_exe_pyinstaller_thread(GUIObj):
     #Setting up some values
-    pathRel='..'
-    pathTop=os.path.join(globV.progPath,pathRel)
-    pathBuildDir=os.path.join(pathTop,'build')
-    pathOutDir=os.path.join(pathTop,'out')
-    #
-    exeName=f'''DenKr_workoutScheduler_{VERSION_DESCRIPTION}'''
+    env=exePaths()
     mainFile='''DenKr_workoutScheduler_main.py'''
-    srcDir='''src'''
     #Preparing the Cmd and Cmd-Line-Arguments for PyInstaller
     cmd='''Python -m PyInstaller'''
     cmdLineArgs=[
-        f'''--name=\"{exeName}\"'''
+        f'''--name=\"{env.exeNameRecent}\"'''
     ,
         '''--onefile'''
     ,
-        f'''--specpath=\"{pathBuildDir}\"'''
+    #     '''--windowed'''
+    # ,
+    #     f'''--icon=\"{iconDir}\"'''
+    # ,
+        f'''--specpath=\"{env.pathBuildDir}\"'''
     ,
-        f'''--workpath=\"{pathBuildDir}\"'''
+        f'''--workpath=\"{env.pathBuildDir}\"'''
     ,
-        f'''--distpath=\"{pathOutDir}\"'''
+        f'''--distpath=\"{env.pathOutDir}\"'''
     ]
     dataFiles=[
         ('''settings''', '''requirements_GUI.txt''')
     ,
         ('''settings''', '''requirements_plain.txt''')
+    ,
+        ('''GUI''', '''DenKr.ico''')
     ]
+    dfRootPath=os.path.join(env.pathRel,env.srcDir)
     for df in dataFiles:
-        dfPath=os.path.join(pathRel,srcDir)
+        dfPath=dfRootPath[:]
         for it in df:
             dfPath=os.path.join(dfPath,it)
         dfModule=''
@@ -87,7 +91,24 @@ def produce_exe_pyinstaller_thread(GUIObj):
     #Just, why not?
     remove_pycache(globV.progPath)
     globV.HCI.printStd("")
-    globV.HCI.printStd(f"Opening threaded live Subprocess Pipe to PyInstaller with:\n  -> {cmd}\n")
+    displayCmd=""
+    openQuot=0
+    escape=False
+    for char in cmd:
+        if ' '==char and 0==openQuot:
+            displayCmd+='\n\t'
+        else:
+            displayCmd+=char
+        if '"'==char and False==escape:
+            if 0==openQuot:
+                openQuot=1
+            else:
+                openQuot=0
+        # if '\\'==char and False==escape:
+        #     escape=True
+        # else:
+        #     escape=False
+    globV.HCI.printStd(f"Opening threaded live Subprocess Pipe to PyInstaller with:\n  -> {displayCmd}\n")
     GUIObj.root.update_idletasks()
     globV.HCI.sout.switch_to_queueMode()
     globV.HCI.serr.switch_to_queueMode()
@@ -128,7 +149,43 @@ def produce_exe_pyinstaller_thread(GUIObj):
     # globV.HCI.printStd("PyInstaller's error:")
     # globV.HCI.printErr(f"{result.stderr}")
     globV.HCI.printStd("")
+    def clean_oldExe():
+        for file in os.listdir(env.pathOutDir):
+            if not file==env.exeNameRecent+".exe":
+                if os.path.isfile(os.path.join(env.pathOutDir, file)):
+                    os.remove(os.path.join(env.pathOutDir,file))
+                else:
+                    shutil.rmtree(os.path.join(env.pathOutDir, file))
+    clean_oldExe()
     if 0==returnCode:
-        shutil.rmtree(pathBuildDir)
+        shutil.rmtree(env.pathBuildDir)
+
+
+
+def move_exe_fromOutToExeDir(srcF,trgtF):
+    trgtDir=os.path.dirname(trgtF)
+    env=exePaths()
+    def clean_oldExe_dst():
+        for file in os.listdir(trgtDir):
+            if os.path.isfile(os.path.join(trgtDir, file)):
+                if -1!=file.find(env.exeName):
+                    if not file==env.exeNameRecent+".exe":
+                        os.remove(os.path.join(trgtDir,file))
+    clean_oldExe_dst()
+    try:
+        _assure_Dirs_exist(trgtDir)
+        os.rename(srcF,trgtF)
+    except FileNotFoundError:
+        globV.HCI.printErr(f"Could not move File\n-> \"{srcF}\"\n\tto\n-> \"{trgtF}\".\n(Source-File not existent)")# no need for "or Destination-Directory" because missing Dirs are created
+    except:
+        globV.HCI.printErr(f"Could not move File\n-> \"{srcF}\"\n\tto\n-> \"{trgtF}\".")
+    def clean_outDir():
+        shutil.rmtree(env.pathOutDir)
+    try:
+        clean_outDir()
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        globV.HCI.printErr(f"While moving exe, occurred exception: {e}")
 
 

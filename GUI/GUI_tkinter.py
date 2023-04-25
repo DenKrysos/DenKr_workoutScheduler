@@ -7,6 +7,8 @@ Created on 2023-04-14
 @author: Dennis Krummacker
 '''
 
+import os
+
 
 ##Global Variables & HCI-struct of Output-Handling
 from settings import global_variables as globV
@@ -28,9 +30,10 @@ from commonFeatures.bits_and_pieces import print_introduction
 ##Other Files for Project
 ##Workout-Scheduler Packages
 from workoutScheduler.workout import workout
-import settings.config_handler as cfghandle
+#import settings.config_handler as cfghandle
 from GUI.GUI_elements import create_cfg_area
 from GUI.GUI_operative_functions import GUI_Operative_Functions as guif
+from settings.path_and_file import ico_path, ico_fName
 
 
 
@@ -73,6 +76,8 @@ class DKWoSched_GUI(GUI_tkinter_Basic):
         self.startup()
     def startup(self):
         self.new_computation()
+    def gui_settings(self):
+        self.root.iconbitmap(os.path.join(globV.inherentDataFilePath,ico_path,ico_fName))
     #--------------------------------------------------------------------------
     def new_computation(self):
         self.workout=workout()

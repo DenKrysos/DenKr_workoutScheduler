@@ -42,11 +42,21 @@ except ImportError:
 ##DenKr Packages
 from auxiliary.filesystem import _assure_Dir_exists
 
+from DenKr_essentials_py.GUI.GUI_assissting import KEY_GUICfgH
+from DenKr_essentials_py.GUI.GUI_assissting import (
+    secure_window_geometry,
+    window_pos_center,
+    GUIconfigHandle_updateStorage,
+    GUIconfigHandle_readIn,
+    carryOver_windowGeometry
+)
+
 
 class GUI_tkinter_Basic(object):
     """A child of this shall define \"create_gui(self)\" to build the GUI with its elements."""
     """A child of this may optionally define \"set_colorPalette(self)\" to overwrite the used Colors, which are set by default."""
     """Same for \"ttkStyle_setStyle()\"."""
+    """A child may optionally define \"gui_settings()\" for performing GUI specific settings that may overwrite the defaults or introduce further ones."""
     """A child may optionally define \"main_steps()\" to perform additional actions before GUI's mainloop is started."""
     def __init__(self,title):
         # Create tkinter window
@@ -63,14 +73,21 @@ class GUI_tkinter_Basic(object):
             pass
         # Set some values
         self._set_fonts()
+        self._set_window_basicValues()
         # ttk Style
         self.ttkStyle=ttk.Style()
         self._theme_set()
+        # Init & Load Config
+        self.GUI_cfgHandle_setup()
         # Some Settings
         self._register_functions()
         self._set_window_PosAndSize()
         # Call function to create GUI widgets
         self.create_gui()
+        try:
+            self.gui_settings()
+        except AttributeError:
+            pass
         try:
             self.root.after(0, self.main_steps())
         except AttributeError:
@@ -89,19 +106,6 @@ class GUI_tkinter_Basic(object):
         self.fontHeading2_size=self.fontDefault_size+2
         self.fontHeading1='helvetica'
         self.fontHeading1_size=self.fontHeading2_size+2
-    def _set_window_PosAndSize(self):
-        self.screenX=self.root.winfo_screenwidth()
-        self.screenY=self.root.winfo_screenheight()
-        taskbarheight=75
-        windowX=1700
-        windowY=1020
-        windowX=min(windowX,self.screenX)
-        windowY=min(windowY,self.screenY-taskbarheight)
-        windowPosX=self.screenX//2-windowX//2
-        windowPosY=(self.screenY-taskbarheight)//2-windowY//2
-        windowPosX=max(windowPosX,0)
-        windowPosY=max(windowPosY,0)
-        self.root.geometry(f"{windowX}x{windowY}+{windowPosX}+{windowPosY}")
     def _theme_set(self):
         self.theme_default=self.ttkStyle.theme_use()
         self.theme_selected=tk.StringVar()# This same Var is used by the created Theme-Select-Frame from the "GUI_tkinter_elements.py -> create_themeSelect_frame()"
@@ -207,6 +211,7 @@ class GUI_tkinter_Basic(object):
         self.ttkStyle.configure("Config.DK.TCombobox", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.configure("Text.Config.DK.TLabel", background=self.color_cfg_text_bg, foreground=self.color_cfg_text_fg)
         self.ttkStyle.configure("Heading1.Config.DK.TLabel", font="13", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
+        self.ttkStyle.configure("Heading2.Config.DK.TLabel", font=(self.fontDefault,self.fontDefault_size+1), background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.configure("TextContainer.DK.TFrame", background=self.color_txtArea_bg)
         self.ttkStyle.configure("Heading1.DK.TLabel", background=self.color_heading_bg, foreground='white', font=(self.fontHeading1, self.fontHeading1_size))
         self.ttkStyle.configure("Heading2.DK.TLabel", font=(self.fontHeading2, self.fontHeading2_size))
@@ -214,6 +219,11 @@ class GUI_tkinter_Basic(object):
         self.cmds=GUI_functions()
         self.cmds.validate_decimal_input=self.root.register(self.validate_decimal_input)
         self.cmds.validate_numeric_input=self.root.register(self.validate_numeric_input)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_window_close)
+    # - - - - - - - - - - - - - - - - - - - - - - -
+    def on_window_close(self):
+        self.GUI_cfgHandle_store()
+        self.root.destroy()
     # - - - - - - - - - - - - - - - - - - - - - - -
     #TODO: Transparent Image stuff for use as background not finished
     # For use as transparent background, Render an Image as temporary file
@@ -258,6 +268,56 @@ class GUI_tkinter_Basic(object):
         self.color_txtArea_fg='white',
         self.color_txtArea_selectbg="lightblue",
         self.color_txtArea_selectfg="black",
+    #--------------------------------------------------------------------------
+    # Configuration
+    #    (Keys defined below)
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def GUI_cfgHandle_default(self):
+        sizeX,sizeY,posX,posY=self._configure_window_PosAndSize_Default()
+        cfgHandle_default={
+            KEY_GUICfgH.RetainGeometry:False,
+            KEY_GUICfgH.SizeX:sizeX,
+            KEY_GUICfgH.SizeY:sizeY,
+            KEY_GUICfgH.PosX:posX,
+            KEY_GUICfgH.PosY:posY
+        }
+        return cfgHandle_default
+    def GUI_cfgHandle_store(self):
+        if True==self.cfgHandle_rt[KEY_GUICfgH.RetainGeometry] or True==self.cfgHandle_changed:
+            self._capture_window_PosAndSize()
+            GUIconfigHandle_updateStorage(self)
+    def GUI_cfgHandle_setup(self):
+        self.cfgHandle={}#what was read from persistent storage and will be written
+        self.cfgHandle_rt=self.GUI_cfgHandle_default()#what is actually used during Run-Time
+        self.cfgHandle_changed=False
+        GUIconfigHandle_readIn(self)
+    #--------------------------------------------------------------------------
+    # Window Settings
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # First create a cfgHandle with self.GUI_cfgHandle_default(), then load the Cfg from persistent storage, then use the window functions
+    def _set_window_basicValues(self):
+        self.screenX=self.root.winfo_screenwidth()
+        self.screenY=self.root.winfo_screenheight()
+        self.taskbarheight=75
+    def _set_window_PosAndSize(self):
+        self.root.geometry(f"{self.cfgHandle_rt[KEY_GUICfgH.SizeX]}x{self.cfgHandle_rt[KEY_GUICfgH.SizeY]}+{self.cfgHandle_rt[KEY_GUICfgH.PosX]}+{self.cfgHandle_rt[KEY_GUICfgH.PosY]}")
+    def _set_window_PosAndSize_toDefault(self):
+        carryOver_windowGeometry(self.cfgHandle_rt,self.cfgHandle)
+        self._set_window_PosAndSize()
+    def _capture_window_PosAndSize(self):
+        self.cfgHandle_rt[KEY_GUICfgH.SizeX]=self.root.winfo_width()
+        self.cfgHandle_rt[KEY_GUICfgH.SizeY]=self.root.winfo_height()
+        self.cfgHandle_rt[KEY_GUICfgH.PosX]=self.root.winfo_x()
+        self.cfgHandle_rt[KEY_GUICfgH.PosY]=self.root.winfo_y()
+    def _restore_window_PosAndSize(self):
+        carryOver_windowGeometry(self.cfgHandle,self.cfgHandle_rt)
+        self._set_window_PosAndSize()
+    def _configure_window_PosAndSize_Default(self):
+        windowSizeX=1700
+        windowSizeY=1020
+        windowPosX,windowPosY=window_pos_center(self,windowSizeX,windowSizeY)
+        windowSizeX,windowSizeY,windowPosX,windowPosY=secure_window_geometry(self,windowSizeX,windowSizeY,windowPosX,windowPosY)
+        return windowSizeX,windowSizeY,windowPosX,windowPosY
     #--------------------------------------------------------------------------
     #System
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -409,6 +469,10 @@ class GUI_tkinter_Basic(object):
         else:
             return False
     #--------------------------------------------------------------------------
+
+
+
+
 
 
 class GUI_IOStream:

@@ -32,11 +32,13 @@ from settings import global_variables as globV
 #-----------------------------------------------------
 def print_introduction():
     #globV.HCI.printStd("Call it with Python 3.7 or higher! This requires order-preserving dictionaries.")
-    globV.HCI.printStd("DenKr_workoutScheduler (v. %s)"%(VersionInfo.VERSION_DESCRIPTION))
+    globV.HCI.printStd("DenKr_workoutScheduler (v. »%s«)"%(VersionInfo.VERSION_DESCRIPTION))
     #globV.HCI.printStd(" (Path of Script: %s) [Here, the History is stored]"%(globV.progPath))
     globV.print_progPath()
     globV.HCI.printStd("")
-    globV.HCI.printStd("It calculates a progressing schedule for your resistance-training workout, i.e. tells you in which order you may train your muscle-groups.")
+    globV.HCI.printStd("It calculates a progressing schedule for your resistance-training workout, i.e. tells you in which order you may train your muscle-groups, including exercises to do so.")
+    globV.HCI.printStd("")
+    globV.HCI.printStd("Configuration:")
     globV.HCI.printStd("The tool can be vastly configured to suit your demands. That is, how many workouts you intend to do per week and how often per week individual muscles shall be attacked; as well as which types of exercises you want (in terms of required equipment) or the individual exercises themselves. Furthermore, more minor configurations are supported, like adjusting the output format.")
     globV.HCI.printStd("In the files \"./_1cfg/configuration.py\" & \"./_1cfg/setup.py\" come the default values. Actually, values from '.json' files from the directory \"./0history\" are taken. From the onset, the .json files don't exist but are created/updated on each successful run. Missing files/values are initiated with values from the default-delivering .py files.")
     globV.HCI.printStd("The default should provide a solid setup for most people up to advanced. However, if you are very advanced you may need to adjust the volume and for sure your total workouts per week.")

@@ -124,12 +124,12 @@ def main_variant1():
     err=0  # @UnusedVariable
     configHandle_setup()
     if useMeth.Terminal==cfghandle.cfgh_rt[cfghandle.keyUseMeth]:
-        assure_dependencies(os.path.join(globV.progPath,requirements_path),requirements_fName_plain)
+        assure_dependencies(os.path.join(globV.inherentDataFilePath,requirements_path),requirements_fName_plain)
         print_introduction()
         err=DenKr_workoutScheduler_Main()
         return 0
     elif useMeth.GUI==cfghandle.cfgh_rt[cfghandle.keyUseMeth]:
-        assure_dependencies(os.path.join(globV.progPath,requirements_path),requirements_fName_GUI)
+        assure_dependencies(os.path.join(globV.inherentDataFilePath,requirements_path),requirements_fName_GUI)
         GUI_instance=DKWoSched_GUI()  # @UnusedVariable
         return 0
     else:
