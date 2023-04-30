@@ -47,8 +47,8 @@ def produce_exe_pyinstaller_thread(GUIObj):
     ,
     #     '''--windowed'''
     # ,
-    #     f'''--icon=\"{iconDir}\"'''
-    # ,
+        f'''--icon=\"{env.iconDir}\"'''
+    ,
         f'''--specpath=\"{env.pathBuildDir}\"'''
     ,
         f'''--workpath=\"{env.pathBuildDir}\"'''

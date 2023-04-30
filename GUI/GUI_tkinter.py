@@ -38,6 +38,14 @@ from settings.path_and_file import ico_path, ico_fName
 
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# REFERENCES for TK/TCL/TKinter
+#
+# https://www.tcl.tk/man/tcl/TkCmd/ttk_button.html
+# Colors:
+#    http://cs111.wellesley.edu/archive/cs111_fall14/public_html/labs/lab12/tkintercolor.html
+
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # TODO
 #
 # - In the Tab for "Dev-Tools"

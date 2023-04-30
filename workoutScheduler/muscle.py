@@ -44,29 +44,6 @@ import settings.config_handler as cfghandle
 
 
 #-----------------------------------------------------
-    #("quads",1,1.75,10)#("quads",1,2,10)
-    #("glutes",1,1.75,10)#("glutes",1,2,10)
-    # - - - - - -
-#Leave the default function just alone. It essentially only serves as a template.
-# -> If you want to change muscle's values, Look into ./_1cfg/setup.py
-# muscle_setup_default=[
-#     (muscleID.chest,1,2,10),
-#     (muscleID.back,1,2,10),
-#     (muscleID.delt_front,2,0.75,5),
-#     (muscleID.delt_rear,2,1,5),
-#     (muscleID.rotator_cuff,2,1.25,6),
-#     (muscleID.delt_side,2,1,5),
-#     (muscleID.quads_n_glutes,1,1.5,10),#1.75-2 per Week
-#     (muscleID.biceps,2,1,5),
-#     (muscleID.triceps,2,1,5),
-#     (muscleID.hamstrings,2,0.9,5),#1
-#     (muscleID.abs,1,1.5,8),
-#     (muscleID.calves,2,0.8,6),#("calves",1,1.5,7)
-#     (muscleID.trapez,2,1,5),
-#     (muscleID.lower_back,2,1,5)#0.75
-# ]
-#-----------------------------------------------------
-#-----------------------------------------------------
 #-----------------------------------------------------
 class muscle(CommonMuscleExercise):
     instance_counter=0
@@ -103,8 +80,14 @@ class muscle(CommonMuscleExercise):
         self.set_pW=set_perWeek
         # self.malus=wo_perWeek/wo_perWeek_total
         # self.bonus=1/wo_perWeek
-        self.malus=wo_perWeek/(wo_perWeek_total-wo_perWeek)
-        self.bonus=1
+        if wo_perWeek==wo_perWeek_total:
+            #special case. has to be accounted for.
+            #Means essentially, this muscle is supposed to be trained every single workout
+            self.malus=wo_perWeek_total
+            self.bonus=0
+        else:
+            self.malus=wo_perWeek/(wo_perWeek_total-wo_perWeek)
+            self.bonus=1
     #------------------------------------------------------------------------------------------
     @classmethod
     def _add_muscle(cls,trgtArr,wo_perWeek_total,idx,name,muscletype,wo_perWeek,sets_perWeek):
@@ -112,7 +95,7 @@ class muscle(CommonMuscleExercise):
         trgtArr[len(trgtArr)-1].set_attributes(wo_perWeek_total,idx,name,muscletype,wo_perWeek,sets_perWeek)
     @classmethod
     def set_muscles(cls,trgtArr,wo_perWeek_total):
-        for ident, bigOrSmall, workouts, sets in cfghandle.cfgSetup_rt[cfghandle.keySetupMuscle]:
+        for ident, bigOrSmall, workouts, sets in cfghandle.cfgSetup_activeProfile[cfghandle.keySetupMuscle]:
             cls._add_muscle(trgtArr,wo_perWeek_total,ident.value[0],ident.value[1],bigOrSmall,workouts,sets)
     #------------------------------------------------------------------------------------------
     #The History for a muscle stores to which Intensity it was trained (which is depending on the scheduled exercise)
@@ -154,22 +137,27 @@ class muscle(CommonMuscleExercise):
     def derive_urgency(self,credit_center,wo_perWeek_total):
         #To make it a little more sophisticated: Derive a value which influences the urgency based on a ratio of workout-free days in relation to workouts-to-do (-> Long free period for a muscle -> high urgency. -> Many workouts with short pause-periods -> lowers urgency. -> Pretty much in schedule and even distribution -> low to none influence)
         #  - To account for that, I analyse the last resting period
-        rest_period=0
+        self.rest_period=0
         joined_history=self.history_shortened+self.schedule
         hist_len=len(joined_history)
         if hist_len>0:
             i=hist_len-1
             while i>=0:
                 if self.minimumServing>joined_history[i]:
-                    rest_period+=(1-joined_history[i])
+                    self.rest_period+=(1-joined_history[i])
                 else:
                     break;
                 # else:
                 #     globV.HCI.printErr("Malformed History while Credit calculation. Exiting...")
                 #     sys.exit()
                 i-=1
-        rest_supposed=(wo_perWeek_total-self.wo_pW)/self.wo_pW
-        rest_ratio=rest_period/rest_supposed
+        else:
+            self.rest_period=1
+        self.rest_supposed=(wo_perWeek_total-self.wo_pW)/self.wo_pW
+        if self.rest_supposed==0:
+            rest_ratio=0
+        else:
+            rest_ratio=self.rest_period/self.rest_supposed
         #
         #ToDo: As factor for the rest_ratio, another value might be better suited
         #self.urgency=(credit_center-self.credit)/self.bonus+0.5*rest_ratio

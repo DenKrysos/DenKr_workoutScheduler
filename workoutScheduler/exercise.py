@@ -143,11 +143,11 @@ class exercise(CommonMuscleExercise):
     # Better don't do such a thing. That messes up the Config-File Handling (especially writing)
     # @classmethod
     # def _set_exercises__strip_enum(cls):
-    #     for i in range(len(cfghandle.cfgSetup_rt[cfghandle.keySetupExe])):
+    #     for i in range(len(cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe])):
     #         # equip=exercise_setup[i][3]
     #         # for j in range(len(equip)):
     #         #     equip[j]=equip[j].value[0]
-    #         muscle=cfghandle.cfgSetup_rt[cfghandle.keySetupExe][i][4]
+    #         muscle=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe][i][4]
     #         for j in range(len(muscle)):
     #             #muscle[j]=(muscle[j][0].value[0],muscle[j][1])
     #             if isinstance(muscle[j][0], muscleID):
@@ -158,13 +158,13 @@ class exercise(CommonMuscleExercise):
     @classmethod
     def set_exercises(cls,trgtArr,excludedArr):
         #cls._set_exercises__strip_enum()
-        #for index, (ident, enabled, precedence, equip, muscle) in enumerate(cfghandle.cfgSetup_rt[cfghandle.keySetupExe]):
-        for index in range(len(cfghandle.cfgSetup_rt[cfghandle.keySetupExe])):
-            ident=cfghandle.cfgSetup_rt[cfghandle.keySetupExe][index][SetupExeIdx.NAME]
-            enabled=cfghandle.cfgSetup_rt[cfghandle.keySetupExe][index][SetupExeIdx.ENABLED]
-            precedence=cfghandle.cfgSetup_rt[cfghandle.keySetupExe][index][SetupExeIdx.PRECEDENCE]
-            equip=cfghandle.cfgSetup_rt[cfghandle.keySetupExe][index][SetupExeIdx.EQUIPMENT]
-            muscle=cfghandle.cfgSetup_rt[cfghandle.keySetupExe][index][SetupExeIdx.INTENSITY]
+        #for index, (ident, enabled, precedence, equip, muscle) in enumerate(cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe]):
+        for index in range(len(cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe])):
+            ident=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe][index][SetupExeIdx.NAME]
+            enabled=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe][index][SetupExeIdx.ENABLED]
+            precedence=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe][index][SetupExeIdx.PRECEDENCE]
+            equip=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe][index][SetupExeIdx.EQUIPMENT]
+            muscle=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe][index][SetupExeIdx.INTENSITY]
             cls._add_exercise(trgtArr,excludedArr,index,ident,precedence,equip,muscle,enabled)
         for i in range(0,len(trgtArr)):
             trgtArr[i]._calc_exe_malus_bonus()

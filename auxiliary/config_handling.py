@@ -43,13 +43,14 @@ def sort_exercises_muscleIntensity(exeArray):
         exe[SetupExeIdx.INTENSITY].sort(key=lambda x: x[1], reverse=True)
 
 def clean_undefined_EnumEntries(cfgSetup):
-    for exercise in cfgSetup[cfghandle.keySetupExe]:
-        for i, val in enumerate(exercise[SetupExeIdx.EQUIPMENT]):
-            if val==equipID.undef:
-                exercise[SetupExeIdx.EQUIPMENT].pop(i)
-        for i, lst in enumerate(exercise[SetupExeIdx.INTENSITY]):
-            if lst[0]==muscleID.undef:
-                exercise[SetupExeIdx.INTENSITY].pop(i)
+    for profile in cfgSetup.values():
+        for exercise in profile[cfghandle.keySetupExe]:
+            for i, val in enumerate(exercise[SetupExeIdx.EQUIPMENT]):
+                if val==equipID.undef:
+                    exercise[SetupExeIdx.EQUIPMENT].pop(i)
+            for i, lst in enumerate(exercise[SetupExeIdx.INTENSITY]):
+                if lst[0]==muscleID.undef:
+                    exercise[SetupExeIdx.INTENSITY].pop(i)
 
 
 
@@ -207,7 +208,7 @@ def configHandle_readPersistent(cfgObj,pathSub,fName,carryOverFunc):
             return 2
         f.close()
     except FileNotFoundError:
-        configHandle_dumpPersistent(cfgObj,pathSub,fName)
+        #configHandle_dumpPersistent(cfgObj,pathSub,fName)
         return 1
     revertedDat=convert_keyAndVal(readDat, names_to_enum_forKey, names_to_enum_forVal)
     carryOverFunc(cfgObj,revertedDat)
@@ -236,6 +237,70 @@ def carryOver_entries_basicCfg(trgt,src):
     #         del src[k]
 # - - - - - - - - - - - - - - -
 def carryOver_entries_setupCfg(trgt,src):
+    for key, value in src.items():
+        value[cfghandle.keySetupMuscle].sort(key=lambda x: x[0].value[0], reverse=False)
+        value[cfghandle.keySetupExe].sort(key=lambda x: x[0], reverse=False)
+        trgt[key]=value
+# - - - - - - - - - - - - - - -
+
+
+def configHandle_init():
+    #No need to init "cfghandle.cfg_handle". Already done at declaration
+    #No need to init "cfghandle.cfgSetup_handle_inherent". Already done at declaration
+    convert_tuple_to_list(cfghandle.cfgSetup_handle_inherent)
+    for value in cfghandle.cfgSetup_handle_inherent.values():
+        value[cfghandle.keySetupMuscle].sort(key=lambda x: x[0].value[0], reverse=False)
+        value[cfghandle.keySetupExe].sort(key=lambda x: x[0], reverse=False)
+    #
+    cfghandle.cfgSetup_activeProfile=cfghandle.cfgSetup_handle_inherent[cfghandle.keySetupProfPre]
+
+
+def configHandle_setup():
+    configHandle_init()
+    #
+    basicCfgFileName=config_file_prefix+config_file_fname+config_file_fExt
+    err=configHandle_readPersistent(
+        cfghandle.cfg_handle,
+        config_file_subpath,
+        basicCfgFileName,
+        carryOver_entries_basicCfg
+    )
+    if 1==err:
+        configHandle_dumpPersistent(cfghandle.cfg_handle,config_file_subpath,basicCfgFileName)
+    #
+    setupCfgFileName=configSetup_file_prefix+configSetup_file_fname+config_file_fExt
+    err=configHandle_readPersistent(
+        cfghandle.cfgSetup_handle,
+        config_file_subpath,
+        setupCfgFileName,
+        carryOver_entries_setupCfg
+    )
+    if 1==err:
+        cfghandle.cfgSetup_handle={}
+        cfghandle.cfgSetup_handle["Profile1"]=copy.deepcopy(cfghandle.cfgSetup_handle_inherent[cfghandle.keySetupProfPre])
+        convert_tuple_to_list(cfghandle.cfgSetup_handle)
+        configHandle_dumpPersistent(cfghandle.cfgSetup_handle,config_file_subpath,setupCfgFileName)
+    #
+    for value in cfghandle.cfgSetup_handle_inherent.values():
+        sort_exercises_muscleIntensity(value[cfghandle.keySetupExe])
+    for value in cfghandle.cfgSetup_handle.values():
+        sort_exercises_muscleIntensity(value[cfghandle.keySetupExe])
+    writeBack_cfghandle_to_runtime()#Runtime Copy
+    firstLoadedProfile=list(cfghandle.cfgSetup_rt.keys())[0]
+    cfghandle.cfgSetup_activeProfile=cfghandle.cfgSetup_rt[firstLoadedProfile]
+
+
+
+
+
+
+
+
+
+
+# Bkp. As it were back in the day, when no multiple Profiles were supported, but the Tool always just worked with one set
+# - - - - - - - - - - - - - - -
+def carryOver_entries_setupCfg_singleProfile(trgt,src):
     src[cfghandle.keySetupMuscle].sort(key=lambda x: x[0].value[0], reverse=False)
     src[cfghandle.keySetupExe].sort(key=lambda x: x[0], reverse=False)
     for i in range(len(trgt[cfghandle.keySetupMuscle])):
@@ -258,37 +323,12 @@ def carryOver_entries_setupCfg(trgt,src):
     #  (I know, I could have directly written over all read values, but maybe in the future I want to change that behavior, then I just have to delete the part below
     trgt[cfghandle.keySetupMuscle].extend(src[cfghandle.keySetupMuscle])
     trgt[cfghandle.keySetupExe].extend(src[cfghandle.keySetupExe])
-# - - - - - - - - - - - - - - -
-
-
-def configHandle_init():
+    
+def configHandle_init_singleProfile():
     #No need to init "cfghandle.cfg_handle". Already done at declaration
-    #No need to init "cfghandle.cfgSetup_handle". Already done at declaration
+    #No need to init "cfghandle.cfgSetup_handle_inherent". Already done at declaration
     cfghandle.cfgSetup_handle=copy.deepcopy(cfghandle.cfgSetup_handle_inherent)
     convert_tuple_to_list(cfghandle.cfgSetup_handle)
-    cfghandle.cfgSetup_handle[cfghandle.keySetupMuscle].sort(key=lambda x: x[0].value[0], reverse=False)
-    cfghandle.cfgSetup_handle[cfghandle.keySetupExe].sort(key=lambda x: x[0], reverse=False)
-
-
-def configHandle_setup():
-    configHandle_init()
-    configHandle_readPersistent(
-        cfghandle.cfg_handle,
-        config_file_subpath,
-        config_file_prefix+config_file_fname+config_file_fExt,
-        carryOver_entries_basicCfg
-    )
-    configHandle_readPersistent(
-        cfghandle.cfgSetup_handle,
-        config_file_subpath,
-        configSetup_file_prefix+configSetup_file_fname+config_file_fExt,
-        carryOver_entries_setupCfg
-    )
-    sort_exercises_muscleIntensity(cfghandle.cfgSetup_handle[cfghandle.keySetupExe])
-    writeBack_cfghandle_to_runtime()#Runtime Copy
-
-
-
-
-
-
+    for value in cfghandle.cfgSetup_handle.values():
+        value[cfghandle.keySetupMuscle].sort(key=lambda x: x[0].value[0], reverse=False)
+        value[cfghandle.keySetupExe].sort(key=lambda x: x[0], reverse=False)

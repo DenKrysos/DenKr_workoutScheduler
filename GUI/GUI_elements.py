@@ -8,6 +8,8 @@ Last Update: 2023-04-18
 @author: Dennis Krummacker
 '''
 
+import copy
+
 
 ##Global Variables & HCI-struct of Output-Handling
 from settings import global_variables as globV
@@ -28,7 +30,7 @@ except ImportError:
 
 ##DenKr Packages
 from DenKr_essentials_py.GUI.GUI_tkinter_basic import GUI_variables, GUI_widgets
-from DenKr_essentials_py.GUI.GUI_tkinter_elements import create_themeSelect_frame
+from DenKr_essentials_py.GUI.GUI_tkinter_elements import create_themeSelect_frame, ScrollableFrame#create_scrollable_frame
 from DenKr_essentials_py.order_tidyness import remove_pycache
 from DenKr_essentials_py.sort_search import search_sorted_list
 from DenKr_essentials_py.GUI.GUI_assissting import KEY_GUICfgH
@@ -39,7 +41,7 @@ import settings.config_handler as cfghandle
 from GUI.GUI_operative_functions import GUI_Operative_Functions as guif
 from GUI.GUI_operative_functions import GUI_call_makeExe, GUI_call_moveExe
 from auxiliary.config_handling import cfg_runtime_writeThrough_storage, writeBack_cfghandle_to_runtime, configHandle_setup
-from settings.values import equipID, muscleID, SetupExeIdx
+from settings.values import equipID, muscleID, SetupExeIdx, SetupMuscleIdx
 from settings.values import BOILERPLATE as valuesBP
 
 
@@ -49,6 +51,13 @@ from settings.values import BOILERPLATE as valuesBP
 # Configuration Area
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def create_cfg_area(GUIObj):
+    # - - - - - - - - - - - -
+    #Some Variables to be visible across
+    GUIObj.state.activeProfile_immutable=False
+    #
+    curr_selectedProfile=None
+    reset_profileSelect=None
+    set_valueWidgetState=None
     #--------------------------------------------
     # Element definition
     # - - - - - - - - - - - - - - - - - - - - - -
@@ -86,10 +95,187 @@ def create_cfg_area(GUIObj):
             # - - - - - -
             #Some Variables to be visible across
             GUIObj.variables.cfgTabBasic=GUI_variables()
+            GUIObj.widgets.cfgTabBasic=GUI_widgets()
             # - - - - - - - - - - - -
             # Tab-Basics
-            tab_cfgBasic=ttk.Frame(cfgTabs, style="Config.DK.TFrame")
+            #tab_cfgBasic_scrollContainer, tab_cfgBasic=create_scrollable_frame(cfgTabs)
+            tab_cfgBasic_scrollContainer=ScrollableFrame(cfgTabs, style="Config.DK.TFrame")
+            tab_cfgBasic_scrollContainer.scrollWrapper.configure(background=GUIObj.color_cfg_bg)
+            tab_cfgBasic=ttk.Frame(tab_cfgBasic_scrollContainer.scrollableFrame, style="Config.DK.TFrame")
+            tab_cfgBasic.pack()
             # - - - - - - - - - - - -
+            #
+            # Sub-Frame: Values
+            def create_subFrame_profileSelect():
+                #--------------------------------------------
+                # Element definition
+                # - - - - - - - - - - - - - - - - - - - - - -
+                subFrameProfSel=ttk.Frame(tab_cfgBasic, style="Config.DK.TFrame")
+                #
+                GUIObj.variables.cfgTabBasic.profileSelect=tk.StringVar()
+                profileSelect_label=ttk.Label(subFrameProfSel, style="Heading1.Config.DK.TLabel", text="Profile")
+                GUIObj.widgets.cfgTabBasic.profileSelect_dropdown=ttk.Combobox(subFrameProfSel, style="Config.DK.TCombobox", textvariable=GUIObj.variables.cfgTabBasic.profileSelect, state="readonly")
+                profileSelect_minus_button=ttk.Button(subFrameProfSel, style="Groove.Config.DK.TButton", width=3, text="-")
+                profileSelect_plus_button=ttk.Button(subFrameProfSel, style="Ridge.Config.DK.TButton", width=3, text="+")
+                profileSelect_helpButton=ttk.Button(subFrameProfSel, style="Config.DK.TButton", text="?")
+                profileName_var=tk.StringVar()
+                profileName_ent=ttk.Entry(subFrameProfSel, style="Config.DK.TEntry", width=30, textvariable=profileName_var)
+                GUIObj.widgets.cfgTabBasic.profileName_ent=profileName_ent
+                #
+                #--------------------------------------------
+                # Element Configuration
+                # - - - - - - - - - - - - - - - - - - - - - -
+                GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.configure(width=25)
+                profSel_immuMap={}
+                GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.configure(height=25)
+                def _curr_selectedProfile():
+                    selected=GUIObj.variables.cfgTabBasic.profileSelect.get()
+                    if True==profSel_immuMap[selected]:
+                        activeProfile=cfghandle.cfgSetup_handle_inherent[selected]
+                        immutable=True
+                    else:
+                        activeProfile=cfghandle.cfgSetup_rt[selected]
+                        immutable=False
+                    return selected, activeProfile, immutable
+                nonlocal curr_selectedProfile
+                curr_selectedProfile=_curr_selectedProfile
+                #
+                def set_profileSelect_items():
+                    nonlocal profSel_immuMap
+                    profSel_immuMap={}
+                    for key in cfghandle.cfgSetup_rt.keys():
+                        profSel_immuMap[key]=False
+                    valueList=list(profSel_immuMap.keys())
+                    valueList.sort(key=lambda x:x, reverse=False)
+                    for key in cfghandle.cfgSetup_handle_inherent.keys():
+                        profSel_immuMap[key]=True
+                        valueList.append(key)
+                    GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.configure(values=valueList)
+                #
+                def on_profileSelect(*args):
+                    nonlocal curr_selectedProfile
+                    selName,cfghandle.cfgSetup_activeProfile,GUIObj.state.activeProfile_immutable=curr_selectedProfile()
+                    GUIObj.widgets.cfgTabBasic.profileName_ent.configure(style="Config.DK.TEntry")
+                    profileName_var.set(selName)
+                    GUIObj.widgets.cfgTabExercise.filter_dropdown.current(0)
+                    set_muscleValues()
+                    nonlocal set_valueWidgetState
+                    set_valueWidgetState()
+                GUIObj.variables.cfgTabBasic.profileSelect.trace("w", on_profileSelect)
+                #
+                def _reset_profileSelect():
+                    set_profileSelect_items()
+                    GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.current(0)
+                nonlocal reset_profileSelect
+                reset_profileSelect=_reset_profileSelect
+                #
+                def focusOut_profileName(event):
+                    selName,profile,_=curr_selectedProfile()
+                    name=profileName_var.get()
+                    if selName==name:
+                        return
+                    existProfiles=list(cfghandle.cfgSetup_rt.keys())
+                    existProfiles.extend(list(cfghandle.cfgSetup_handle_inherent.keys()))
+                    if name in existProfiles:
+                        GUIObj.widgets.cfgTabBasic.profileName_ent.configure(style="Error.Config.DK.TEntry")
+                        x=GUIObj.widgets.text_stdout.winfo_rootx()+GUIObj.widgets.text_stdout.winfo_width()//2
+                        y=GUIObj.widgets.text_stdout.winfo_rooty()+GUIObj.widgets.text_stdout.winfo_height()//4
+                        GUIObj.show_popup_simple('Duplicate!\nProfile-Name already existent.',(x,y))
+                        return
+                    GUIObj.widgets.cfgTabBasic.profileName_ent.configure(style="Config.DK.TEntry")
+                    cfghandle.cfgSetup_rt[name]=profile
+                    del cfghandle.cfgSetup_rt[selName]
+                    reset_profileSelect()
+                    newSelIdx=GUIObj.widgets.cfgTabBasic.profileSelect_dropdown['values'].index(name)
+                    GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.current(newSelIdx)
+                profileName_ent.bind("<FocusOut>", focusOut_profileName)
+                #
+                def on_profileSelect_help():
+                    globV.HCI.printStd("")
+                    globV.HCI.printStd("This tools supports to store multiple Profiles.")
+                    globV.HCI.printStd("- Individually per Profile maintained are:")
+                    globV.HCI.printStd("   -> Settings for Muscles")
+                    globV.HCI.printStd("   -> Settings for Exercises")
+                    globV.HCI.printStd("- Taken for next Computation is the currently selected Profile.")
+                    globV.HCI.printStd("- The Profiles \"Preset\", \"Default\", \"Appropriate\" & \"Optimum\" are inherent for the application and cannot be altered.")
+                    globV.HCI.printStd("- Also, if you create additional Profiles with these names, they are ignored but the inherent ones are used.")
+                    globV.HCI.printStd("- The \"Basic-Stuff\" (i.e. Values configurable in the Tab \"Basic\") does have nothing to do with the Profiles.")
+                    globV.HCI.printStd("")
+                profileSelect_helpButton.bind("<ButtonRelease-1>", on_profileSelect_help)
+                #
+                def on_rem_profile(event):
+                    if True==GUIObj.state.activeProfile_immutable:
+                        return
+                    curProfName,_,_=curr_selectedProfile()
+                    curSel=GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.current()
+                    del cfghandle.cfgSetup_rt[curProfName]
+                    reset_profileSelect()
+                    profItems=GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.cget('values')
+                    if not len(profItems)>curSel:
+                        curSel-=1
+                    GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.current(curSel)
+                    if True==GUIObj.state.activeProfile_immutable and 0<curSel:
+                        curSel-=1
+                    GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.current(curSel)
+                def on_add_profile(event):
+                    new=copy.deepcopy(cfghandle.cfgSetup_handle_inherent[cfghandle.keySetupProfDef])
+                    newName="Profile1"
+                    i=2
+                    while newName in cfghandle.cfgSetup_rt:
+                        newName=f"Profile{i}"
+                        i+=1
+                    cfghandle.cfgSetup_rt[newName]=new
+                    reset_profileSelect()
+                    newSelIdx=GUIObj.widgets.cfgTabBasic.profileSelect_dropdown['values'].index(newName)
+                    GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.current(newSelIdx)
+                profileSelect_minus_button.bind("<ButtonRelease-1>", on_rem_profile)
+                profileSelect_plus_button.bind("<ButtonRelease-1>", on_add_profile)
+                #
+                #--------------------------------------------
+                # Special Functions
+                # - - - - - - - - - - - - - - - - - - - - - -
+                def _set_valueWidgetState():
+                    if True==GUIObj.state.activeProfile_immutable:
+                        newState="disabled"
+                        profileSelect_minus_button.state(['disabled'])#doesn't seem to do anything. Not even the ttk-state is added
+                    else:
+                        newState="normal"
+                        profileSelect_minus_button.state(['!disabled'])
+                    for wids in GUIObj.widgets.cfgTabMuscle.perMuscle.values():
+                        wids[0].configure(state=newState)
+                        wids[1].configure(state=newState)
+                    GUIObj.widgets.cfgTabExercise.exeActive_checkbox.configure(state=newState)
+                    GUIObj.widgets.cfgTabExercise.exePrecedence_entry.configure(state=newState)
+                    GUIObj.widgets.cfgTabExercise.exeSelect_minus_button.configure(state=newState)
+                    GUIObj.widgets.cfgTabExercise.exeSelect_plus_button.configure(state=newState)
+                    GUIObj.widgets.cfgTabBasic.profileName_ent.configure(state=newState)
+                    profileSelect_minus_button.configure(state=newState)
+                nonlocal set_valueWidgetState
+                set_valueWidgetState=_set_valueWidgetState
+                #
+                #--------------------------------------------
+                # Packing & Grid Config
+                # - - - - - - - - - - - - - - - - - - - - - -
+                subFrameProfSel.columnconfigure(0, weight=1)
+                subFrameProfSel.columnconfigure(3, weight=1)
+                row=0
+                col=0
+                profileSelect_label.grid(row=row, column=col, padx=0, pady=(0,0), sticky=tk.W)
+                col+=1
+                profileSelect_minus_button.grid(row=row, column=col, padx=(0,5), pady=(0,0), sticky=tk.NE)
+                col+=1
+                profileSelect_plus_button.grid(row=row, column=col, padx=0, pady=(0,0), sticky=tk.NE)
+                col+=1
+                profileSelect_helpButton.grid(row=row, column=col, padx=(0,0), pady=(0,0), sticky=tk.NE)
+                row+=1
+                col=0
+                GUIObj.widgets.cfgTabBasic.profileSelect_dropdown.grid(row=row, column=col, columnspan=4, padx=0, pady=(5,0), sticky=tk.N)
+                row+=1
+                col=0
+                profileName_ent.grid(row=row, column=col, columnspan=4, padx=0, pady=(5,0), sticky=tk.N)
+                #
+                return subFrameProfSel
+            subFrameProfSel=create_subFrame_profileSelect()
             #
             # Sub-Frame: Values
             def create_subFrame_values():
@@ -233,16 +419,20 @@ def create_cfg_area(GUIObj):
                     configHandle_setup()
                     guif.set_exercise_names(GUIObj)
                     set_cfg_basic()
-                    set_muscleValues()
+                    #set_muscleValues()
                     #set_exerciseValues()#Triggered by setting the Filter
-                    GUIObj.widgets.cfgTabExercise.filter_dropdown.current(0)
+                    #GUIObj.widgets.cfgTabExercise.filter_dropdown.current(0)
+                    nonlocal reset_profileSelect
+                    reset_profileSelect()
                 def reset_config():#Only resets the displayed values, with what is present in the cfg_handle
                     writeBack_cfghandle_to_runtime()
                     guif.set_exercise_names(GUIObj)
                     set_cfg_basic()
-                    set_muscleValues()
+                    #set_muscleValues()
                     #set_exerciseValues()
-                    GUIObj.widgets.cfgTabExercise.filter_dropdown.current(0)
+                    #GUIObj.widgets.cfgTabExercise.filter_dropdown.current(0)
+                    nonlocal reset_profileSelect
+                    reset_profileSelect()
                 def print_help_config():
                     GUIObj.widgets.outTabs.select(0)
                     globV.HCI.switch_out(GUIObj.IOstream_std)
@@ -489,6 +679,9 @@ def create_cfg_area(GUIObj):
             #--------------------------------------------
             # Packing & Grid Config (Tab Cfg-Basic)
             # - - - - - - - - - - - - - - - - - - - - - -
+            subFrameProfSel.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(10,0))
+            valSep=ttk.Separator(tab_cfgBasic, orient=tk.HORIZONTAL)
+            valSep.pack(side=tk.TOP, fill=tk.X, pady=(15,10))
             subFrame_Values.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(10,0))
             saveSep=ttk.Separator(tab_cfgBasic, orient=tk.HORIZONTAL)
             saveSep.pack(side=tk.TOP, fill=tk.X, pady=(15,10))
@@ -506,171 +699,127 @@ def create_cfg_area(GUIObj):
             compSep.pack(side=tk.TOP, fill=tk.X, pady=(15,10))
             subFrame_newComp.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(20,10))
             # - - - - - - - - - - - - - - - - - - - - - - - -
-            return tab_cfgBasic
+            return tab_cfgBasic_scrollContainer
         cfgTab_basic=create_cfgTab_basic()
         # - - - - - -
         #
         # Tab: Config Muscles
         def create_cfgTab_muscle():
             # Tab-Basics
-            tab_cfgMuscle=ttk.Frame(cfgTabs, style="Config.DK.TFrame")
+            #tab_cfgMuscle=ttk.Frame(cfgTabs, style="Config.DK.TFrame")
+            tab_cfgMuscle_scrollContainer=ScrollableFrame(cfgTabs, style="Config.DK.TFrame")
+            tab_cfgMuscle_scrollContainer.scrollWrapper.configure(background=GUIObj.color_cfg_bg)
+            tab_cfgMuscle=ttk.Frame(tab_cfgMuscle_scrollContainer.scrollableFrame, style="Config.DK.TFrame")
+            tab_cfgMuscle.pack(fill=tk.BOTH,expand=tk.YES)
+            tab_cfgMuscle_label=ttk.Label(tab_cfgMuscle, style="Heading1.Config.DK.TLabel", text="Muscles")
+            tab_cfgMuscle_label.pack(side=tk.TOP,anchor=tk.N, pady=(10,5))
             # - - - - - - - - - - - -
             #Some Variables to be visible across
             GUIObj.variables.cfgTabMuscle=GUI_variables()
             GUIObj.widgets.cfgTabMuscle=GUI_widgets()
             # - - - - - - - - - - - -
-            curr_selectedMuscle=None
             #
             # Sub-Frame: Select Muscle-to-edit
-            def create_subFrame_muscleSelect():
-                subFrame_muscleSelect=ttk.Frame(tab_cfgMuscle, style="Config.DK.TFrame")
-                #--------------------------------------------
-                # Element Definition
-                # - - - - - - - - - - - - - - - - - - - - - -
-                GUIObj.variables.cfgTabMuscle.muscleSelect=tk.StringVar()
-                muscleSelect_label=ttk.Label(subFrame_muscleSelect, style="Heading1.Config.DK.TLabel", text="Muscle:")
-                muscleSelect_dropdown=ttk.Combobox(subFrame_muscleSelect, style="Config.DK.TCombobox", textvariable=GUIObj.variables.cfgTabMuscle.muscleSelect, state="readonly")
+            def create_subFrame_musclesVals():
+                GUIObj.variables.cfgTabMuscle.perMuscle={}
+                GUIObj.widgets.cfgTabMuscle.perMuscle={}
+                subFrame_musclesVals=ttk.Frame(tab_cfgMuscle, style="Config.DK.TFrame")
                 #
                 #--------------------------------------------
-                # Element Configuration
-                # - - - - - - - - - - - - - - - - - - - - - -
-                muscleSelect_dropdown.configure(height=25)
-                def _curr_selectedMuscle():
-                    idx=muscleSelect_idxMap[GUIObj.variables.cfgTabMuscle.muscleSelect.get()]
-                    muscle=cfghandle.cfgSetup_rt[cfghandle.keySetupMuscle][idx]
-                    return idx, muscle
-                nonlocal curr_selectedMuscle
-                curr_selectedMuscle=_curr_selectedMuscle
-                #
-                muscleSelect_idxMap={}
-                for i, muscle in enumerate(cfghandle.cfgSetup_rt[cfghandle.keySetupMuscle]):
-                    muscleSelect_idxMap[muscle[0].value[1]]=i
-                def on_muscleSelect(*args):
-                    _, muscle=curr_selectedMuscle()
-                    wo_pWeek_val=muscle[2]
-                    sets_pWeek_val=muscle[3]
-                    # try:
-                    #     formatted_value="{:.0f}".format(wo_pWeek_val) if wo_pWeek_val.is_integer() else f"{wo_pWeek_val}"
-                    #     GUIObj.widgets.cfgTabMuscle.muscleSelect_wo_pWeek_entry.delete(0,tk.END)
-                    #     GUIObj.widgets.cfgTabMuscle.muscleSelect_wo_pWeek_entry.insert(tk.END,formatted_value)
-                    # except:
-                    #     GUIObj.variables.cfgTabMuscle.wo_pWeek_var.set(wo_pWeek_val)
-                    # try:
-                    #     formatted_value="{:.0f}".format(sets_pWeek_val) if sets_pWeek_val.is_integer() else f"{sets_pWeek_val}"
-                    #     GUIObj.widgets.cfgTabMuscle.muscleSelect_sets_pWeek_entry.delete(0,tk.END)
-                    #     GUIObj.widgets.cfgTabMuscle.muscleSelect_sets_pWeek_entry.insert(0,formatted_value)
-                    # except:
-                    #     GUIObj.variables.cfgTabMuscle.sets_pWeek_var.set(sets_pWeek_val)
-                    try:
-                        if wo_pWeek_val.is_integer():
-                            wo_pWeek_val=int(wo_pWeek_val)
-                    except:
-                        pass
-                    GUIObj.variables.cfgTabMuscle.wo_pWeek_var.set(wo_pWeek_val)
-                    try:
-                        if sets_pWeek_val.is_integer():
-                            sets_pWeek_val=int(sets_pWeek_val)
-                    except:
-                        pass
-                    GUIObj.variables.cfgTabMuscle.sets_pWeek_var.set(sets_pWeek_val)
-                muscleSelect_dropdown.configure(values=list(muscleSelect_idxMap.keys()))
-                muscleSelect_dropdown.current(0)
-                muscleSelect_dropdown.bind("<<ComboboxSelected>>", on_muscleSelect)
-                nonlocal set_muscleValues
-                set_muscleValues=on_muscleSelect
-                #
-                #--------------------------------------------
-                # Packing & Grid Config
-                # - - - - - - - - - - - - - - - - - - - - - -
-                row=0
-                col=0
-                subFrame_muscleSelect.columnconfigure(0, weight=1)
-                muscleSelect_label.grid(row=row, column=col, padx=0, pady=(10,0), sticky=tk.N)
-                row+=1
-                muscleSelect_dropdown.grid(row=row, column=col, padx=0, pady=(10,0), sticky=tk.N)
-                row+=1
-                col=0
-                #
-                return subFrame_muscleSelect
-            subFrame_muscleSelect=create_subFrame_muscleSelect()
-            # - - - - - - - - - - - -
-            #
-            # Sub-Frame: Values-per-Muscle
-            def create_subFrame_valPerMuscle():
-                subFrame_valPerMuscle=ttk.Frame(tab_cfgMuscle, style="Config.DK.TFrame")
-                #--------------------------------------------
-                # Element Definition
-                # - - - - - - - - - - - - - - - - - - - - - -
-                nonlocal curr_selectedMuscle
-                muscleSelect_wo_pWeek_label=ttk.Label(subFrame_valPerMuscle, style="Config.DK.TLabel", text="WorkoutsPerWeek:")
-                GUIObj.variables.cfgTabMuscle.wo_pWeek_var=tk.DoubleVar()
-                muscleSelect_wo_pWeek_entry=ttk.Entry(subFrame_valPerMuscle, style="Config.DK.TEntry", width=7, textvariable=GUIObj.variables.cfgTabMuscle.wo_pWeek_var, state=tk.NORMAL)
-                muscleSelect_sets_pWeek_label=ttk.Label(subFrame_valPerMuscle, style="Config.DK.TLabel", text="Sets-per-Week:")
-                GUIObj.variables.cfgTabMuscle.sets_pWeek_var=tk.DoubleVar()
-                muscleSelect_sets_pWeek_entry=ttk.Entry(subFrame_valPerMuscle, style="Config.DK.TEntry", width=7, textvariable=GUIObj.variables.cfgTabMuscle.sets_pWeek_var, state=tk.NORMAL)
-                #
-                #--------------------------------------------
-                # Element Configuration
+                # Element Configuration Preparation
                 # - - - - - - - - - - - - - - - - - - - - - -
                 def change_workoutsPerWeek_muscle(event):
                     try:
-                        value=GUIObj.variables.cfgTabMuscle.wo_pWeek_var.get()
+                        value=event.widget.var.get()
                         try:
                             if value.is_integer():
                                 value=int(value)
                         except:
                             pass
-                        _, muscle=curr_selectedMuscle()
-                        muscle[2]=value
+                        muscle=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupMuscle][event.widget.ident]
+                        muscle[SetupMuscleIdx.WORKOUTSperWEEK]=value
                     except:
                         x=GUIObj.widgets.text_stdout.winfo_rootx()+GUIObj.widgets.text_stdout.winfo_width()//2
                         y=GUIObj.widgets.text_stdout.winfo_rooty()+GUIObj.widgets.text_stdout.winfo_height()//4
                         GUIObj.show_popup_simple('Not a valid number!',(x,y))
-                muscleSelect_wo_pWeek_entry.bind("<KeyRelease>", change_workoutsPerWeek_muscle)
-                muscleSelect_wo_pWeek_entry.bind("<FocusOut>", change_workoutsPerWeek_muscle)
-                muscleSelect_wo_pWeek_entry.configure(
-                    validate="key",
-                    validatecommand=(GUIObj.cmds.validate_decimal_input,"%S","%P")
-                )
                 #
                 def change_setsPerWeek(event):
                     try:
-                        value=GUIObj.variables.cfgTabMuscle.sets_pWeek_var.get()
+                        value=event.widget.var.get()
                         try:
                             if value.is_integer():
                                 value=int(value)
                         except:
                             pass
-                        _, muscle=curr_selectedMuscle()
-                        muscle[3]=value
+                        muscle=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupMuscle][event.widget.ident]
+                        muscle[SetupMuscleIdx.SETSperWEEK]=value
                     except:
                         x=GUIObj.widgets.text_stdout.winfo_rootx()+GUIObj.widgets.text_stdout.winfo_width()//2
                         y=GUIObj.widgets.text_stdout.winfo_rooty()+GUIObj.widgets.text_stdout.winfo_height()//4
                         GUIObj.show_popup_simple('Not a valid number!',(x,y))
-                muscleSelect_sets_pWeek_entry.bind("<KeyRelease>", change_setsPerWeek)
-                muscleSelect_sets_pWeek_entry.bind("<FocusOut>", change_setsPerWeek)
-                muscleSelect_sets_pWeek_entry.configure(
-                    validate="key",
-                    validatecommand=(GUIObj.cmds.validate_decimal_input,"%S","%P")
-                )
                 #
                 #--------------------------------------------
-                # Packing & Grid Config
+                # Building it
                 # - - - - - - - - - - - - - - - - - - - - - -
-                row=0
-                col=0
-                muscleSelect_wo_pWeek_label.grid(row=row, column=col, padx=(0,10), pady=(10,0), sticky=tk.N)
-                col+=1
-                muscleSelect_wo_pWeek_entry.grid(row=row, column=col, padx=0, pady=(10,0), sticky=tk.N)
-                row+=1
-                col=0
-                muscleSelect_sets_pWeek_label.grid(row=row, column=col, padx=(0,10), pady=(10,0), sticky=tk.N)
-                col+=1
-                muscleSelect_sets_pWeek_entry.grid(row=row, column=col, padx=0, pady=(10,0), sticky=tk.N)
-                row+=1
-                col=0
-                return subFrame_valPerMuscle
-            subFrame_valPerMuscle=create_subFrame_valPerMuscle()
+                for idx, muscle in enumerate(cfghandle.cfgSetup_handle_inherent[cfghandle.keySetupProfPre][cfghandle.keySetupMuscle]):
+                    musNam_lFrame=ttk.LabelFrame(subFrame_musclesVals, style="Config.DK.TLabelframe", text=muscle[SetupMuscleIdx.IDENT].value[1])
+                    #
+                    wo_pWeek_label=ttk.Label(musNam_lFrame, style="Config.DK.TLabel", text="WorkoutsPerWeek:")
+                    wo_pWeek_var=tk.DoubleVar()
+                    wo_pWeek_entry=ttk.Entry(musNam_lFrame, style="Config.DK.TEntry", width=7, textvariable=wo_pWeek_var, state=tk.NORMAL)
+                    sets_pWeek_label=ttk.Label(musNam_lFrame, style="Config.DK.TLabel", text="Sets-per-Week:")
+                    sets_pWeek_var=tk.DoubleVar()
+                    sets_pWeek_entry=ttk.Entry(musNam_lFrame, style="Config.DK.TEntry", width=7, textvariable=sets_pWeek_var, state=tk.NORMAL)
+                    #
+                    GUIObj.variables.cfgTabMuscle.perMuscle[muscle[SetupMuscleIdx.IDENT]]=[wo_pWeek_var,sets_pWeek_var]
+                    GUIObj.widgets.cfgTabMuscle.perMuscle[muscle[SetupMuscleIdx.IDENT]]=[wo_pWeek_entry,sets_pWeek_entry]
+                    #
+                    # Assign Configuration
+                    wo_pWeek_entry.var=wo_pWeek_var
+                    wo_pWeek_entry.ident=idx#copy.deepcopy(muscle[SetupMuscleIdx.IDENT])
+                    sets_pWeek_entry.var=sets_pWeek_var
+                    sets_pWeek_entry.ident=idx
+                    #
+                    wo_pWeek_entry.bind("<KeyRelease>", change_workoutsPerWeek_muscle)
+                    wo_pWeek_entry.bind("<FocusOut>", change_workoutsPerWeek_muscle)
+                    wo_pWeek_entry.configure(
+                        validate="key",
+                        validatecommand=(GUIObj.cmds.validate_decimal_input,"%S","%P")
+                    )
+                    sets_pWeek_entry.bind("<KeyRelease>", change_setsPerWeek)
+                    sets_pWeek_entry.bind("<FocusOut>", change_setsPerWeek)
+                    sets_pWeek_entry.configure(
+                        validate="key",
+                        validatecommand=(GUIObj.cmds.validate_decimal_input,"%S","%P")
+                    )
+                    #
+                    #--------------------------------------------
+                    # Packing & Grid Config
+                    # - - - - - - - - - - - - - - - - - - - - - -
+                    row=0
+                    col=0
+                    wo_pWeek_label.grid(row=row, column=col, padx=(7,0), pady=(0,5), sticky=tk.N)
+                    col+=1
+                    wo_pWeek_entry.grid(row=row, column=col, padx=(0,7), pady=(0,5), sticky=tk.N)
+                    row+=1
+                    col=0
+                    sets_pWeek_label.grid(row=row, column=col, padx=(7,0), pady=(0,5), sticky=tk.N)
+                    col+=1
+                    sets_pWeek_entry.grid(row=row, column=col, padx=(0,7), pady=(0,7), sticky=tk.N)
+                    row+=1
+                    col=0
+                    musNam_lFrame.pack(side=tk.TOP,anchor=tk.N,pady=(0,8))
+                #
+                def _set_muscleValues(*args):
+                    for muscle in cfghandle.cfgSetup_activeProfile[cfghandle.keySetupMuscle]:
+                        varsL=GUIObj.variables.cfgTabMuscle.perMuscle[muscle[SetupMuscleIdx.IDENT]]
+                        varsL[0].set(muscle[SetupMuscleIdx.WORKOUTSperWEEK])
+                        varsL[1].set(muscle[SetupMuscleIdx.SETSperWEEK])
+                nonlocal set_muscleValues
+                set_muscleValues=_set_muscleValues
+                #
+                return subFrame_musclesVals
+            subFrame_musclesVals=create_subFrame_musclesVals()
             #
             set_muscleValues()
             #
@@ -693,7 +842,7 @@ def create_cfg_area(GUIObj):
                     GUIObj.widgets.outTabs.select(0)
                     globV.HCI.switch_out(GUIObj.IOstream_std)
                     globV.HCI.printStd("")
-                    globV.HCI.printStd("The preset values of the initally shipped Muscle-profile works reasonably well for having 3.5 Workouts-per-Week with 4 Muscles per Workout.")
+                    globV.HCI.printStd("The preset values of the initally shipped Muscle-profile work reasonably well for having 3.5 Workouts-per-Week with 4 Muscles per Workout.")
                     globV.HCI.printStd("But actually, this is a little too low Volume. The Profile in \"muscle.py\" called \"muscle_setup_default\" would be more like the optimum volume. But this would require about 5-6 Muscles per Workout or 4-5 Workouts-per-Week, which would be most likely too much a dedication for most people.")
                     globV.HCI.printStd("So you might very well work with this profile here and still live on with a good and calm conscience.")
                     globV.HCI.printStd("Furthermore, now you can consider making use of the \"Volume Scaling\" Option, which allows the computation to include an additional muscle every now and then.")
@@ -710,16 +859,17 @@ def create_cfg_area(GUIObj):
             #--------------------------------------------
             # Packing & Grid Config
             # - - - - - - - - - - - - - - - - - - - - - -
-            subFrame_muscleSelect.pack(side=tk.TOP, fill=tk.X)
-            subFrame_valPerMuscle.pack(side=tk.TOP, fill=tk.X)
+            # subFrame_muscleSelect.pack(side=tk.TOP, fill=tk.X)
+            # subFrame_valPerMuscle.pack(side=tk.TOP, fill=tk.X)
+            subFrame_musclesVals.pack(side=tk.TOP, fill=tk.X)
             saveSep=ttk.Separator(tab_cfgMuscle, orient=tk.HORIZONTAL)
             saveSep.pack(side=tk.TOP, fill=tk.X, pady=(15,10))
             subFrame_SaveLoad.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(0,0))
             helpSep=ttk.Separator(tab_cfgMuscle, orient=tk.HORIZONTAL)
-            helpSep.pack(side=tk.TOP, fill=tk.X, pady=(60,10))
-            subFrame_muscleHelp.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(0,0))
+            helpSep.pack(side=tk.TOP, fill=tk.X, pady=(30,10))
+            subFrame_muscleHelp.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(0,25))
             #
-            return tab_cfgMuscle
+            return tab_cfgMuscle_scrollContainer
         cfgTab_muscle=create_cfgTab_muscle()
         #
         # Tab: Config Muscles
@@ -760,6 +910,8 @@ def create_cfg_area(GUIObj):
                 exeSelect_plus_button=ttk.Button(exeSelect_addRemButtons, style="Ridge.Config.DK.TButton", width=3, text="+")
                 exeSelect_minus_button.grid(row=0,column=0)
                 exeSelect_plus_button.grid(row=0,column=1,padx=(3,0))
+                GUIObj.widgets.cfgTabExercise.exeSelect_minus_button=exeSelect_minus_button
+                GUIObj.widgets.cfgTabExercise.exeSelect_plus_button=exeSelect_plus_button
                 #
                 exeSelect_labelFrame.columnconfigure(0, weight=1)
                 exeSelect_label.grid(row=0,column=0,sticky=tk.N)
@@ -778,7 +930,7 @@ def create_cfg_area(GUIObj):
                         muscle=None
                     else:
                         idxMuscle=filterMuscle_idxMap[filterVal]
-                        muscle=cfghandle.cfgSetup_rt[cfghandle.keySetupMuscle][idxMuscle]
+                        muscle=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupMuscle][idxMuscle]
                     return muscle
                 def _curr_selectedExe():
                     select=GUIObj.variables.cfgTabExercise.exeSelect.get()
@@ -787,7 +939,7 @@ def create_cfg_area(GUIObj):
                         exe=None
                     else:
                         idx=exeSelect_idxMap[select]
-                        exe=cfghandle.cfgSetup_rt[cfghandle.keySetupExe][idx]
+                        exe=cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe][idx]
                     return idx, exe
                 exeSelect_idxMap={}
                 #
@@ -796,7 +948,7 @@ def create_cfg_area(GUIObj):
                     nonlocal filterMuscle_idxMap
                     filterMuscle_idxMap={'<ALL>':0}
                     i=0
-                    for muscle in cfghandle.cfgSetup_rt[cfghandle.keySetupMuscle]:
+                    for muscle in cfghandle.cfgSetup_activeProfile[cfghandle.keySetupMuscle]:
                         filterMuscle_idxMap[muscle[0].value[1]]=i
                         i+=1
                     filterMuscle_idxMap['<ALL>']=i
@@ -822,11 +974,11 @@ def create_cfg_area(GUIObj):
                     exeSelect_idxMap={}
                     filterMus=_curr_selectedFilter()
                     if filterMus is None:
-                        for i, exe in enumerate(cfghandle.cfgSetup_rt[cfghandle.keySetupExe]):
+                        for i, exe in enumerate(cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe]):
                             exeSelect_idxMap[exe[SetupExeIdx.NAME]]=i
                     else:
                         filterMus=filterMus[0]
-                        for i, exe in enumerate(cfghandle.cfgSetup_rt[cfghandle.keySetupExe]):
+                        for i, exe in enumerate(cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe]):
                             intensities=exe[SetupExeIdx.INTENSITY]
                             for intens in intensities:
                                 if intens[0]==filterMus:
@@ -871,23 +1023,27 @@ def create_cfg_area(GUIObj):
                 set_exerciseValues=on_exeSelect
                 #
                 def on_add_exercise(event):
+                    if True==GUIObj.state.activeProfile_immutable:
+                        return
                     new=valuesBP.empty_exercise()
                     guif.set_exercise_names(GUIObj)
                     i=2
                     while not -1==search_sorted_list(GUIObj.state.exe_names, new[SetupExeIdx.NAME]):
                         new[SetupExeIdx.NAME]=f"<new{i}>"
                         i+=1
-                    cfghandle.cfgSetup_rt[cfghandle.keySetupExe].append(new)
+                    cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe].append(new)
                     GUIObj.widgets.cfgTabExercise.filter_dropdown.current(0)
                     allItems=GUIObj.widgets.cfgTabExercise.exeSelect_dropdown.cget('values')
                     GUIObj.widgets.cfgTabExercise.exeSelect_dropdown.current(len(allItems)-1)
                     guif.set_exercise_names(GUIObj)
                 def on_rem_exercise(event):
+                    if True==GUIObj.state.activeProfile_immutable:
+                        return
                     def rem_exercise_do():
-                        exeIdx, exe=curr_selectedExe()
+                        exeIdx, _=curr_selectedExe()
                         curFilterSelect=GUIObj.widgets.cfgTabExercise.filter_dropdown.current()
                         curExeSelect=GUIObj.widgets.cfgTabExercise.exeSelect_dropdown.current()
-                        cfghandle.cfgSetup_rt[cfghandle.keySetupExe].pop(exeIdx)
+                        cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe].pop(exeIdx)
                         GUIObj.widgets.cfgTabExercise.filter_dropdown.current(curFilterSelect)
                         exeItems=GUIObj.widgets.cfgTabExercise.exeSelect_dropdown.cget('values')
                         if len(exeItems)>curExeSelect:
@@ -959,6 +1115,7 @@ def create_cfg_area(GUIObj):
                 exeActive_label=ttk.Label(subFrame_exeVal, style="Config.DK.TLabel", text="Enabled:")
                 GUIObj.variables.cfgTabExercise.exeActive_var=tk.BooleanVar()
                 exeActive_checkbox=ttk.Checkbutton(subFrame_exeVal, style="Config.DK.TCheckbutton", variable=GUIObj.variables.cfgTabExercise.exeActive_var)
+                GUIObj.widgets.cfgTabExercise.exeActive_checkbox=exeActive_checkbox
                 #
                 exePrecedence_label=ttk.Label(subFrame_exeVal, style="Config.DK.TLabel", text="Precedence:")
                 GUIObj.variables.cfgTabExercise.exePrecedence_var=tk.DoubleVar()
@@ -1072,9 +1229,15 @@ def create_cfg_area(GUIObj):
                 exeEquip_enumMap[equ.value[1]]=equ
             ###   Function to dynamically (re)-create it
             def create_subFrame_exeEquip():
+                if True==GUIObj.state.activeProfile_immutable:
+                    widgetState=tk.DISABLED
+                    cboxState=tk.DISABLED
+                else:
+                    widgetState=tk.NORMAL
+                    cboxState="readonly"
                 subFrame_exeEquip=ttk.Frame(cfgTab_exercise, style="Config.DK.TFrame")
                 lFrame_exeEquip=ttk.LabelFrame(subFrame_exeEquip, style="Config.DK.TLabelframe", text='Enabling Equipment')
-                add_exeEquip_Button=ttk.Button(lFrame_exeEquip, style="Ridge.Config.DK.TButton", width=2, text="+")
+                add_exeEquip_Button=ttk.Button(lFrame_exeEquip, style="Ridge.Config.DK.TButton", width=2, text="+", state=widgetState)
                 GUIObj.widgets.cfgTabExercise.Equip_wids_singleInstance=[]
                 GUIObj.widgets.cfgTabExercise.Equip_wids_singleInstance.append(subFrame_exeEquip)
                 GUIObj.widgets.cfgTabExercise.Equip_wids_singleInstance.append(lFrame_exeEquip)
@@ -1103,7 +1266,7 @@ def create_cfg_area(GUIObj):
                     GUIObj.widgets.cfgTabExercise.Equip_wids[subListLF].append(lineFrame)
                     equip=exe[SetupExeIdx.EQUIPMENT][i]
                     var=tk.StringVar()
-                    cbox=ttk.Combobox(lineFrame, style="Config.DK.TCombobox", height=25, textvariable=var, state="readonly")
+                    cbox=ttk.Combobox(lineFrame, style="Config.DK.TCombobox", height=25, textvariable=var, state=cboxState)
                     cbox.widget_idx=i
                     cbox.configure(values=list(exeEquip_enumMap.keys()))
                     for j, item in enumerate(cbox['values']):
@@ -1111,9 +1274,11 @@ def create_cfg_area(GUIObj):
                             cbox.current(j)
                             break
                     cbox.bind("<<ComboboxSelected>>", on_exeEquipSelect)
-                    rem_exeEquip_Button=ttk.Button(lineFrame, style="Groove.Config.DK.TButton", width=2, text="-")
+                    rem_exeEquip_Button=ttk.Button(lineFrame, style="Groove.Config.DK.TButton", width=2, text="-", state=widgetState)
                     rem_exeEquip_Button.widget_idx=i
                     def on_rem_exeEquip(event):
+                        if True==GUIObj.state.activeProfile_immutable:
+                            return
                         _, exe=curr_selectedExe()
                         exe[SetupExeIdx.EQUIPMENT].pop(event.widget.widget_idx)
                         GUIObj.widgets.cfgTabExercise.Equip_wids_singleInstance[2].pack_forget()
@@ -1136,6 +1301,8 @@ def create_cfg_area(GUIObj):
                 _create_widgets_startingAt(0)
                 #
                 def on_add_exeEquip(event):
+                    if True==GUIObj.state.activeProfile_immutable:
+                        return
                     _, exe=curr_selectedExe()
                     exe[SetupExeIdx.EQUIPMENT].append(equipID.undef)
                     event.widget.pack_forget()
@@ -1192,9 +1359,15 @@ def create_cfg_area(GUIObj):
                 exeIntens_enumMap[mus.value[1]]=mus
             ###   Function to dynamically (re)-create it
             def create_subFrame_exeIntensity():
+                if True==GUIObj.state.activeProfile_immutable:
+                    widgetState=tk.DISABLED
+                    cboxState=tk.DISABLED
+                else:
+                    widgetState=tk.NORMAL
+                    cboxState="readonly"
                 subFrame_exeIntensity=ttk.Frame(cfgTab_exercise, style="Config.DK.TFrame")
                 lFrame_exeIntensity=ttk.LabelFrame(subFrame_exeIntensity, style="Config.DK.TLabelframe", text='Intensity')
-                add_exeIntensity_Button=ttk.Button(lFrame_exeIntensity, style="Ridge.Config.DK.TButton", width=2, text="+")
+                add_exeIntensity_Button=ttk.Button(lFrame_exeIntensity, style="Ridge.Config.DK.TButton", width=2, text="+", state=widgetState)
                 GUIObj.widgets.cfgTabExercise.Intensity_wids_singleInstance=[]
                 GUIObj.widgets.cfgTabExercise.Intensity_wids_singleInstance.append(subFrame_exeIntensity)
                 GUIObj.widgets.cfgTabExercise.Intensity_wids_singleInstance.append(lFrame_exeIntensity)
@@ -1240,7 +1413,7 @@ def create_cfg_area(GUIObj):
                     GUIObj.widgets.cfgTabExercise.Intensity_wids[subListLF].append(lineFrame)
                     intens=exe[SetupExeIdx.INTENSITY][i]
                     varCbox=tk.StringVar()
-                    cbox=ttk.Combobox(lineFrame, style="Config.DK.TCombobox", height=25, width=15, textvariable=varCbox, state="readonly")
+                    cbox=ttk.Combobox(lineFrame, style="Config.DK.TCombobox", height=25, width=15, textvariable=varCbox, state=cboxState)
                     cbox.widget_idx=i
                     cbox.configure(values=list(exeIntens_enumMap.keys()))
                     for j, item in enumerate(cbox['values']):
@@ -1250,7 +1423,7 @@ def create_cfg_area(GUIObj):
                     cbox.bind("<<ComboboxSelected>>", on_exeIntensMuscleSelect)
                     varEnt=tk.DoubleVar()
                     varEnt.set(intens[1])
-                    entry=ttk.Entry(lineFrame, style="Config.DK.TEntry", textvariable=varEnt, width=5, state=tk.NORMAL)
+                    entry=ttk.Entry(lineFrame, style="Config.DK.TEntry", textvariable=varEnt, width=5, state=widgetState)
                     entry.var=varEnt
                     entry.widget_idx=i
                     entry.bind("<KeyRelease>", on_exeIntensityChange)
@@ -1260,9 +1433,11 @@ def create_cfg_area(GUIObj):
                         validatecommand=(GUIObj.cmds.validate_decimal_input,"%S","%P")
                     )
                     #
-                    rem_exeIntensity_Button=ttk.Button(lineFrame, style="Groove.Config.DK.TButton", width=2, text="-")
+                    rem_exeIntensity_Button=ttk.Button(lineFrame, style="Groove.Config.DK.TButton", width=2, text="-", state=widgetState)
                     rem_exeIntensity_Button.widget_idx=i
                     def on_rem_exeIntensity(event):
+                        if True==GUIObj.state.activeProfile_immutable:
+                            return
                         _, exe=curr_selectedExe()
                         exe[SetupExeIdx.INTENSITY].pop(event.widget.widget_idx)
                         GUIObj.widgets.cfgTabExercise.Intensity_wids_singleInstance[2].pack_forget()
@@ -1288,6 +1463,8 @@ def create_cfg_area(GUIObj):
                 _create_widgets_startingAt(0)
                 #
                 def on_add_exeIntensity(event):
+                    if True==GUIObj.state.activeProfile_immutable:
+                        return
                     _, exe=curr_selectedExe()
                     exe[SetupExeIdx.INTENSITY].append([muscleID.undef,0])
                     event.widget.pack_forget()
@@ -1505,13 +1682,17 @@ def create_cfg_area(GUIObj):
         return userQuery_area
     #userQuery_area=create_userQuery_area()
     
+    
+    
+    reset_profileSelect()
+    
 
     #--------------------------------------------
     # Packing & Grid Config
     # - - - - - - - - - - - - - - - - - - - - - -
     # Main-Frame
     topFrame.pack(side=tk.TOP, fill=tk.X, padx=0, pady=0)
-    cfgTabs.pack(side=tk.TOP, fill=tk.X, padx=0, pady=0)
+    cfgTabs.pack(side=tk.TOP, fill=tk.BOTH, expand=tk.YES, padx=0, pady=0)
     #userQuery_area.pack(anchor=tk.SW, side=tk.BOTTOM, fill=tk.X, expand=tk.YES)
     
     return frame_config

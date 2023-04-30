@@ -29,12 +29,32 @@ cfg_handle={
 }
 
 
+
+keySetupProfPre="Preset"
+keySetupProfDef="Default"
+keySetupProfOpt="Optimum"
+keySetupProfAppr="Approriate"
+#- - - - - - -
 keySetupMuscle='SetupMuscle'
 keySetupExe='SetupExercise'
 
 cfgSetup_handle_inherent={
-    keySetupMuscle:setup.muscle_setup,
-    keySetupExe:setup.exercise_setup
+    keySetupProfPre:{
+        keySetupMuscle:setup.muscle_setup__preset,
+        keySetupExe:setup.exercise_setup
+    },
+    keySetupProfDef:{
+        keySetupMuscle:setup.muscle_setup__default,
+        keySetupExe:setup.exercise_setup
+    },
+    keySetupProfAppr:{
+        keySetupMuscle:setup.muscle_setup__appropriate,
+        keySetupExe:setup.exercise_setup
+    },
+    keySetupProfOpt:{
+        keySetupMuscle:setup.muscle_setup__optimum,
+        keySetupExe:setup.exercise_setup
+    }
 }
 cfgSetup_handle={}
 
@@ -47,3 +67,8 @@ cfgSetup_handle={}
 # If desired, on certain operations, the _rt can be written to cfg_handle, to then dump the current runtime status to persistent storage.
 cfgh_rt={}
 cfgSetup_rt={}
+
+
+
+#That points to the currently selected Profile. The Computation works with this. It is set on startup to the inherent->Preset Profile. The GUI may set it differently during operation
+cfgSetup_activeProfile=None

@@ -84,6 +84,13 @@ import settings.config_handler as cfghandle
 
 
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# REFERENCES / Online RESOURCES
+#
+# Online Interpreter to quickly Test stuff:
+#   https://www.programiz.com/python-programming/online-compiler/
+
+
 
 
 

@@ -179,14 +179,24 @@ class GUI_tkinter_Basic(object):
         self.ttkStyle.configure("Config.DK.TCheckbutton", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.map('Config.DK.TCheckbutton',
             background=[('!active', self.color_cfg_bg), ('active', self.color_cfg_light)],
+            fieldbackground=[('disabled', 'LightSkyBlue2'), ('!disabled', 'white')],
+            foreground=[('disabled', 'gray40'), ('!disabled', 'black')],
         )
         self.ttkStyle.configure("Config.DK.TLabel", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.configure("Italic.Config.DK.TLabel", font=(self.fontDefault, self.fontDefault_size+1, tkfont.ITALIC))
         self.ttkStyle.configure("Config.DK.TEntry", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
+        self.ttkStyle.map('Config.DK.TEntry',
+            fieldbackground=[('disabled', 'LightSkyBlue2'), ('!disabled', 'white')],
+            foreground=[('disabled', 'gray40'), ('!disabled', 'black')],
+        )
         self.ttkStyle.configure("Error.Config.DK.TEntry", fieldbackground='red', foreground=self.color_cfg_foreground_light)
+        self.ttkStyle.map('Error.Config.DK.TEntry',
+            fieldbackground=[('disabled', 'red'), ('!disabled', 'red')],
+            foreground=[('disabled', self.color_cfg_foreground_light), ('!disabled', self.color_cfg_foreground_light)],
+        )
         self.ttkStyle.configure("Config.DK.TButton", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.map('Config.DK.TButton',
-            background=[('!active', self.color_cfg_light), ('active', 'LightSkyBlue1')],
+            background=[('!active', self.color_cfg_light), ('active', 'LightSkyBlue1'), ('disabled', 'blue2')],
             foreground=[('!active', 'black'), ('active', 'black')],
             focuscolor=[('disabled', 'black'), ('!disabled', 'black')],
             highlightcolor=[('focus', 'white'), ('!focus', 'white')],
@@ -209,6 +219,10 @@ class GUI_tkinter_Basic(object):
             background=[('!active', self.color_cfg_bg), ('active', self.color_cfg_light)],
         )
         self.ttkStyle.configure("Config.DK.TCombobox", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
+        self.ttkStyle.map('Config.DK.TCombobox',
+            fieldbackground=[('disabled', 'LightSkyBlue2'), ('!disabled', 'white')],
+            foreground=[('disabled', 'gray40'), ('!disabled', 'black')],
+        )
         self.ttkStyle.configure("Text.Config.DK.TLabel", background=self.color_cfg_text_bg, foreground=self.color_cfg_text_fg)
         self.ttkStyle.configure("Heading1.Config.DK.TLabel", font="13", background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)
         self.ttkStyle.configure("Heading2.Config.DK.TLabel", font=(self.fontDefault,self.fontDefault_size+1), background=self.color_cfg_bg, foreground=self.color_cfg_foreground_light)

@@ -83,7 +83,7 @@ class GUI_Operative_Functions:
         globV.HCI.restore_out()
     @classmethod
     def set_exercise_names(cls,GUIObj):
-        GUIObj.state.exe_names=[sublist[0] for sublist in cfghandle.cfgSetup_rt[cfghandle.keySetupExe]]
+        GUIObj.state.exe_names=[sublist[0] for sublist in cfghandle.cfgSetup_activeProfile[cfghandle.keySetupExe]]
         GUIObj.state.exe_names.sort()
 
 

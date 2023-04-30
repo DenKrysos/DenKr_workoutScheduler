@@ -31,22 +31,7 @@ from settings.values import muscleID, equipID
 #   (Now you can consider using the "Volume Scaling" Option, which allows the computation to include an additional muscle every now and then.)
 #   (I would assess that leaving the values like here works well with deactivated Volume-Scaling)
 #   (Active Volume-Scaling might add a fifth muscle too often for many people. So, when using this option, you might want to lower Chest&Back to 1.55, Lower-back to 0.75, Quads&Glutes to 1.4)
-muscle_setup=[
-    (muscleID.chest,1,1.7,10),# 2 per Week
-    (muscleID.back,1,1.7,10),# 2 per Week
-    (muscleID.rotator_cuff,2,1.25,6),
-    (muscleID.delt_front,2,0.75,5),
-    (muscleID.delt_rear,2,1,5),
-    (muscleID.delt_side,2,1,5),
-    (muscleID.quads_n_glutes,1,1.5,10),#1.75-2 per Week
-    (muscleID.biceps,2,1,5),
-    (muscleID.triceps,2,1,5),
-    (muscleID.hamstrings,2,0.9,5),
-    (muscleID.abs,1,1.5,8),
-    (muscleID.calves,2,0.9,6),
-    (muscleID.trapez,2,1,5),
-    (muscleID.lower_back,2,0.8,5)
-]
+# - - - - -
     #Chest -- Brust
     #Back -- Rücken
     #Quads -- Quadrizeps (Oberschenkel)
@@ -60,6 +45,76 @@ muscle_setup=[
     #Side-Delts (Seitlicher (oberer) Schulter-Muskel)
     #Front-Delts (Forderer (oberer) Schulter-Muskel)
     #Trapezius
+# - - - - -
+# This forst profile serves for setting the initial values, when no .json-Config-Files are existent yet.
+#   The ones below are always kept as additional immutable profiles
+muscle_setup__preset=[
+    (muscleID.chest,1,1.7,10),
+    (muscleID.back,1,1.7,10),
+    (muscleID.rotator_cuff,2,1.25,6),
+    (muscleID.delt_front,2,0.75,5),
+    (muscleID.delt_rear,2,1,5),
+    (muscleID.delt_side,2,1,5),
+    (muscleID.quads_n_glutes,1,1.5,10),
+    (muscleID.biceps,2,1,5),
+    (muscleID.triceps,2,1,5),
+    (muscleID.hamstrings,2,0.9,5),
+    (muscleID.abs,1,1.5,8),
+    (muscleID.calves,2,0.9,6),
+    (muscleID.trapez,2,1,5),
+    (muscleID.lower_back,2,0.8,5)
+]
+# - - - - -
+#Leave the Profiles below just alone. They essentially serves as a templates.
+# -> If you want to change muscle's values, adjust the one above or create more custom profiles via the GUI
+muscle_setup__default=[
+    (muscleID.chest,1,1.7,10),
+    (muscleID.back,1,1.7,10),
+    (muscleID.rotator_cuff,2,1.25,6),
+    (muscleID.delt_front,2,0.75,5),
+    (muscleID.delt_rear,2,1,5),
+    (muscleID.delt_side,2,1,5),
+    (muscleID.quads_n_glutes,1,1.5,10),
+    (muscleID.biceps,2,1,5),
+    (muscleID.triceps,2,1,5),
+    (muscleID.hamstrings,2,0.9,5),
+    (muscleID.abs,1,1.5,8),
+    (muscleID.calves,2,0.9,6),
+    (muscleID.trapez,2,1,5),
+    (muscleID.lower_back,2,0.8,5)
+]
+muscle_setup__appropriate=[
+    (muscleID.chest,1,1.8,10),
+    (muscleID.back,1,1.8,10),
+    (muscleID.rotator_cuff,2,1.25,6),
+    (muscleID.delt_front,2,0.75,5),
+    (muscleID.delt_rear,2,1,5),
+    (muscleID.delt_side,2,1,5),
+    (muscleID.quads_n_glutes,1,1.5,10),
+    (muscleID.biceps,2,1,5),
+    (muscleID.triceps,2,1,5),
+    (muscleID.hamstrings,2,0.9,5),
+    (muscleID.abs,1,1.5,8),
+    (muscleID.calves,2,0.9,6),
+    (muscleID.trapez,2,1,5),
+    (muscleID.lower_back,2,0.8,5)
+]
+muscle_setup__optimum=[
+    (muscleID.chest,1,2,10),
+    (muscleID.back,1,2,10),
+    (muscleID.rotator_cuff,2,1.25,6),
+    (muscleID.delt_front,2,0.75,5),
+    (muscleID.delt_rear,2,1,5),
+    (muscleID.delt_side,2,1,5),
+    (muscleID.quads_n_glutes,1,2,10),
+    (muscleID.biceps,2,1,5),
+    (muscleID.triceps,2,1,5),
+    (muscleID.hamstrings,2,1,5),
+    (muscleID.abs,1,1.5,8),
+    (muscleID.calves,2,1.25,6),
+    (muscleID.trapez,2,1,5),
+    (muscleID.lower_back,2,1,5)
+]
 #-----------------------------------------------------
 
 

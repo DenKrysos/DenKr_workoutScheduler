@@ -49,6 +49,11 @@ class equipID(Enum):
 #=====================================================
 #=====================================================
 #-----------------------------------------------------
+class SetupMuscleIdx:
+    IDENT=0
+    TYPE=1
+    WORKOUTSperWEEK=2
+    SETSperWEEK=3
 class SetupExeIdx:
     NAME=0
     INHERENT=1

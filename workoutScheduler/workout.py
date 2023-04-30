@@ -141,7 +141,17 @@ class workout(object):
         self.set_basics()
         self.set_muscles()
         self.set_exercises()
+        self.validate_config()
         self.set_phase2()
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def validate_config(self):
+        #ToDo: This is very much to be extende
+        for muscle in self.muscle_groups:
+            if muscle.wo_pW>self.workouts_perWeek:
+                globV.HCI.printErr("Invalid Configuration!")
+                globV.HCI.printErr(f"  You configured the muscle \"{muscle.name}\" to have more Workouts-per-Week than you set as total Workouts-per-Week.")
+                globV.HCI.printErr("  That doesn't make sense, right?")
+                globV.HCI.printErr("  You should adjust this.")
     #------------------------------------------------------------------------------------------
     def debug_print_muscles(self,lst,indiv_muscle_c):
         globV.HCI.printStd("Debug - Muscles: (Counter: %d)"%(indiv_muscle_c))
@@ -500,8 +510,8 @@ class workout(object):
             random.shuffle(group)
         # Concatenate the shuffled groups back into a single list
         self.exercise_workingSet=[item for group in groups for item in group]
-    def muscles_assure_rest(self):
-        #ToDo: Use the workouts per Week to determine the number of days between workouts or introduce an additional parameter for this (detailed workout spread across days) to make sure that a muscle has 48-72 h of rest
+    def muscles_assure_rest_old(self):#deprecated, not used anymore
+        # (detailed workout spread across days) to make sure that a muscle has 48-72 h of rest
         #move muscles with no preceeding rest (i.e. was trained last workout) to the end of the list
         i=len(self.muscle_workingSet)-1
         while i>=0:
@@ -512,6 +522,14 @@ class workout(object):
                     #self.muscle_workingSet.append(self.muscle_workingSet.pop(self.muscle_workingSet.index(5)))
                     #self.muscle_workingSet.append(self.muscle_workingSet.pop(i))
                     self.muscle_workingSet.pop(i)
+            i-=1
+    def muscles_assure_rest(self):
+        # (detailed workout spread across days) to make sure that a muscle has 48-72 h of rest
+        #move muscles with no preceeding rest (i.e. was trained last workout) to the end of the list
+        i=len(self.muscle_workingSet)-1
+        while i>=0:
+            if 0.95<self.muscle_workingSet[i].rest_supposed and 0==self.muscle_workingSet[i].rest_period:
+                self.muscle_workingSet.pop(i)
             i-=1
     #------------------------------------------------------------------------------------------
     def _is_supersetMuscle(self,muscle):
@@ -1080,7 +1098,7 @@ class workout(object):
         self.history_read()
         self.history_show_previousWorkoutSchedule_terminal()
         err=self.compute_workoutSchedule()
-        if 0<err:
+        if 0==err:
             self.history_show_computedWorkoutSchedule_terminal()
             
             self.push_schedule_toHistory()
