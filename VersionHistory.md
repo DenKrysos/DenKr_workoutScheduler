@@ -1,6 +1,12 @@
 # DenKr_workoutScheduler -- Version-History
 
 
+## beta-0.5.1
+* One minor adjustment:
+    * Increased the len of the "history_shortened" for exercises to account for better variety with big exercise selections
+
+
+
 ## beta-0.5.0
 
 * Support for maintaining multiple Profiles
@@ -16,6 +22,7 @@
 ### Commissioning Version
 
 If you worked with one of the beta-0.4.x Versions, you have to delete your old Config-File "0history/1_2-config_setup.json". A new one, with the new format will be created.
+You can carry over your values from before. Within a profile, the format is identical to the former single-profile-file.
 
 
 

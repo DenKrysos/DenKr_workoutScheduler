@@ -414,17 +414,17 @@ class workout(object):
             if 0==day:
                 return "Mo"
             elif 1==day:
-                return "Di"
+                return "Tu"
             elif 2==day:
-                return "Mi"
+                return "We"
             elif 3==day:
-                return "Do"
+                return "Th"
             elif 4==day:
                 return "Fr"
             elif 5==day:
                 return "Sa"
             elif 6==day:
-                return "So"
+                return "Su"
             else:
                 return "DotW"
         daydelta=7.0/self.workouts_perWeek

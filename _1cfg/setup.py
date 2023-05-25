@@ -216,7 +216,7 @@ exercise_setup=[
         [equipID.Sling],
         [(muscleID.chest,1)]
     ),
-    ("Power-Push", 1, True,
+    ("Power-Push (Sling)", 1, True,
         0.8,
         [equipID.Sling],
         [(muscleID.chest,1)]
@@ -279,7 +279,7 @@ exercise_setup=[
         [equipID.Sling],
         [(muscleID.back,0.8),(muscleID.trapez,0.3)]
     ),
-    ("Power-Pull", 1, True,
+    ("Power-Pull (Sling)", 1, True,
         0.8,
         [equipID.Sling],
         [(muscleID.back,1)]
@@ -370,9 +370,14 @@ exercise_setup=[
         [equipID.Sling,equipID.ResistanceBand,equipID.CablePull,equipID.Gym],
         [(muscleID.delt_rear,1)]
     ),
-    ("Crab-Row (\"Rear-Delt Row\")", 1, True,
+    ("Crab-Row (\"Rear-Delt Row\") (Sling)", 1, True,
         0.8,
         [equipID.Sling,equipID.Gym],
+        [(muscleID.delt_rear,1)]
+    ),
+    ("Dumbbell Crab-Row", 1, False,
+        0.5,
+        [equipID.Dumbbell,equipID.Gym],
         [(muscleID.delt_rear,1)]
     ),
     ("Sling, Ext.-rotated Pull-to-Cross", 1, True,

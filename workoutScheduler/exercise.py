@@ -185,7 +185,7 @@ class exercise(CommonMuscleExercise):
     @classmethod
     def history_prepare_shortened_all(cls,trgtArray,workouts_perWeek):
         #derive the credit over 4 weeks
-        [i.history_prepare_shortened(int(workouts_perWeek*4)) for i in trgtArray]
+        [i.history_prepare_shortened(int(workouts_perWeek*12)) for i in trgtArray]
     #------------------------------------------------------------------------------------------
     def derive_credit_fromHistory(self,credit_center):
         if self.enabled:
