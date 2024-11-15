@@ -142,6 +142,7 @@ class muscle(CommonMuscleExercise):
         hist_len=len(joined_history)
         if hist_len>0:
             i=hist_len-1
+            self.rest_prevHitIntense=joined_history[i]
             while i>=0:
                 if self.minimumServing>joined_history[i]:
                     self.rest_period+=(1-joined_history[i])

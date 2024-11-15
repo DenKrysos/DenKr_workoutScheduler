@@ -13,6 +13,7 @@ import sys
 
 ## Some Fundamentals
 import DenKr_essentials_py.importMe_fundamental  # @UnusedImport
+from DenKr_essentials_py.math.numbers import isEven  # @UnusedImport
 
 
 ## System Packages
@@ -305,44 +306,42 @@ class workout(object):
                 else:
                     globV.HCI.printStd(" Try again.«\n")
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    def __history_show_WorkoutSchedule_element_generic_reverse(self,exeList,index,chosenList):
+    def __history_show_WorkoutSchedule_element_generic_reverse(self,exeList,index,scheduleOrHistoryList):
         #index+=1#Because when using it subtractive to access the entries in reverse order, one would actually have to use 'len(List)-1'. With this increment here, this is done for
         #  ^^ But that's already assured by how the function is driven by its wrapper
-        scheduled_exe=[]
-        scheduled_mus=[]
-        for iexercise in exeList:
-            iList=getattr(iexercise,chosenList)
-            if len(iList)>=index:
-                if 0<iList[len(iList)-index]:
-                    scheduled_exe.append(iexercise)
-        for imuscle in self.muscle_groups:
-            iList=getattr(imuscle,chosenList)
-            if len(iList)>=index:
-                if 0<iList[len(iList)-index]:
-                    scheduled_mus.append(imuscle)
         #
-        leftEnt=len(scheduled_exe)
-        while 0<leftEnt:
-            iexercise=scheduled_exe[0]
-            iList=getattr(iexercise,chosenList)
-            exeForThisMus=[]
-            exeForThisMus.append((0,iexercise))
-            for j in range(1, len(scheduled_exe)):
-                jexercise=scheduled_exe[j]
-                jList=getattr(jexercise,chosenList)
-                if iList[len(iList)-index]==jList[len(jList)-index]:
-                    exeForThisMus.append((j,jexercise))
-            for imuscle in scheduled_mus:
-                if iList[len(iList)-index]==imuscle.idx:
-                    globV.HCI.printStd("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
-                    if 1<len(exeForThisMus):
-                        globV.HCI.printStd(" ",end="")
-                        for i in range(1,len(exeForThisMus),1):
-                            globV.HCI.printStd("  >& %s"%(exeForThisMus[i][1].name),end="")
-                        globV.HCI.printStd("")
-            for j in range(len(exeForThisMus)-1,-1,-1):
-                scheduled_exe.pop(exeForThisMus[j][0])
-                leftEnt-=1
+        # Gather the due muscles and exercises from their individual 'schedule' lists
+        (scheduled_mus,scheduled_exe)=self.__history_show_element__gatherMuscleExeFromSchedule(scheduleOrHistoryList,exeList,index,reverse=1)
+        # Group and Sort
+        schedule_this=self.__history_show_element__groupSortOrderMuscleExe(scheduled_mus,scheduled_exe,scheduleOrHistoryList,index,reverse=1)
+        # Print it
+        self.__history_show_element__printScheduleEntry(schedule_this)
+        #
+        return
+        #
+        # OLD CODE
+        # leftEnt=len(scheduled_exe)
+        # while 0<leftEnt:
+        #     iexercise=scheduled_exe[0]
+        #     iList=getattr(iexercise,scheduleOrHistoryList)
+        #     exeForThisMus=[]
+        #     exeForThisMus.append((0,iexercise))
+        #     for j in range(1, len(scheduled_exe)):
+        #         jexercise=scheduled_exe[j]
+        #         jList=getattr(jexercise,scheduleOrHistoryList)
+        #         if iList[len(iList)-index]==jList[len(jList)-index]:
+        #             exeForThisMus.append((j,jexercise))
+        #     for imuscle in scheduled_mus:
+        #         if iList[len(iList)-index]==imuscle.idx:
+        #             globV.HCI.printStd("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
+        #             if 1<len(exeForThisMus):
+        #                 globV.HCI.printStd(" ",end="")
+        #                 for i in range(1,len(exeForThisMus),1):
+        #                     globV.HCI.printStd("  >& %s"%(exeForThisMus[i][1].name),end="")
+        #                 globV.HCI.printStd("")
+        #     for j in range(len(exeForThisMus)-1,-1,-1):
+        #         scheduled_exe.pop(exeForThisMus[j][0])
+        #         leftEnt-=1
     def _history_show_previousWorkoutSchedule_element(self,exeList,index):
         globV.HCI.printStd("===============")
         globV.HCI.printStd("== Workout t-%d"%(index))
@@ -373,41 +372,151 @@ class workout(object):
         globV.HCI.printStd("#########################################")
         globV.HCI.printStd("#########################################")
         globV.HCI.printStd("#########################################\n")
-    def _history_show_computedWorkoutSchedule_element(self,index,dotw="DotW",year="2023",month="MM",day="DD"):
-        scheduled_exe=[]
+    def __history_show_element__gatherMuscleExeFromSchedule(self,scheduleOrHistoryList,exeList,scheduleIndex,reverse=0):
+        '''Gather the due muscles and exercises from their individual 'schedule' lists'''
         scheduled_mus=[]
-        for iexercise in self.exercises:
-            if 0<iexercise.schedule[index]:
-                scheduled_exe.append(iexercise)
+        scheduled_exe=[]
+        for iexercise in exeList:
+            iList=getattr(iexercise,scheduleOrHistoryList)
+            if reverse==1:
+                if len(iList)>=scheduleIndex:
+                    if 0<iList[len(iList)-scheduleIndex]:
+                        scheduled_exe.append(iexercise)
+            else:
+                if 0<iList[scheduleIndex]:
+                    scheduled_exe.append(iexercise)
         for imuscle in self.muscle_groups:
-            if 0<imuscle.schedule[index]:
-                scheduled_mus.append(imuscle)
+            iList=getattr(imuscle,scheduleOrHistoryList)
+            if reverse==1:
+                if len(iList)>=scheduleIndex:
+                    if 0<iList[len(iList)-scheduleIndex]:
+                        scheduled_mus.append(imuscle)
+            else:
+                if 0<iList[scheduleIndex]:
+                    scheduled_mus.append(imuscle)
+        return (scheduled_mus,scheduled_exe)
+    def __history_show_element__groupSortOrderMuscleExe(self,scheduled_mus,scheduled_exe,scheduleOrHistoryList,scheduleIndex,reverse=0):
+        '''
+        Input: If reverse=1, the scheduleIndex is used relative to a list's length from the back. If not, it is directly the Index of the list
+        Group and Sort
+          - Combine Exercises to muscles (there could me more than one exercise per muscle)
+          - Sort so that Superset-Muscles come in direct succession and so that such a pair begins at an even index, starting from 0. (Have a collection of Pairs of two muscles)
+          - First pull all Superset-Muscles to the front of the initial-list. Otherwise we may run out of Indices in the resulting list, as the first slots are already filled with non-Superset-Muscles.
+        '''
+        # Merge Muscles and Exercises
+        schedule_this=[]
+        curWriteIdx=-1
+        i=0
+        while i<len(scheduled_exe):
+            iexercise=scheduled_exe.pop(i)
+            iList=getattr(iexercise,scheduleOrHistoryList)
+            for j in range(len(scheduled_mus)):
+                if reverse==1:
+                    if iList[len(iList)-scheduleIndex]==scheduled_mus[j].idx:
+                        break
+                else:
+                    if iList[scheduleIndex]==scheduled_mus[j].idx:
+                        break
+            schedule_this.append([scheduled_mus.pop(j),[]])
+            curWriteIdx+=1
+            schedule_this[curWriteIdx][1].append(iexercise)
+            # Get remaining Exercises for this Muscle
+            j=0
+            while j<len(scheduled_exe):
+                jList=getattr(scheduled_exe[j],scheduleOrHistoryList)
+                if reverse==1:
+                    if jList[len(jList)-scheduleIndex]==schedule_this[curWriteIdx][0].idx:
+                        schedule_this[curWriteIdx][1].append(scheduled_exe.pop(j))
+                    else:
+                        j+=1
+                else:
+                    if jList[scheduleIndex]==schedule_this[curWriteIdx][0].idx:
+                        schedule_this[curWriteIdx][1].append(scheduled_exe.pop(j))
+                    else:
+                        j+=1
+        #
+        # Order by Supersets
+        ## Pull SuperSet-Muscles to the front
+        for i in range(len(schedule_this)):
+            (isSupSet,_,_)=self._is_supersetMuscle(schedule_this[i][0])
+            if isSupSet:
+                schedule_this.insert(0,schedule_this.pop(i))
+        ## Switch List-Identifier
+        scheduled_mus=schedule_this
+        schedule_this=[]
+        ## Group by matching SuperSet
+        curWriteIdx=0
+        while 0<len(scheduled_mus):
+            # Create an auxiliary list of only the muscles in the same order as in the prepared List for passing into the superset-finding-funtion to get the index of the SuperSet-Counterpart
+            auxCopy=[item[0] for item in scheduled_mus]
+            (isSupSet,partnerFound,partnerIdx)=self._checkAndFind_supersetMuscle(scheduled_mus[0][0],auxCopy)
+            if isSupSet and partnerFound:
+                if isEven(curWriteIdx):
+                    musc1=scheduled_mus.pop(partnerIdx)
+                    musc2=scheduled_mus.pop(0)
+                    # Now have the muscles of one SuperSet also ordered by their Muscle-Idx
+                    if musc1[0].idx<musc2[0].idx:
+                        schedule_this.append(musc1)
+                        schedule_this.append(musc2)
+                    else:
+                        schedule_this.append(musc2)
+                        schedule_this.append(musc1)
+                    curWriteIdx+=2
+                else:
+                    # Can't actually happen due to the Pulling-front earlier
+                    pass
+            else:
+                schedule_this.append(scheduled_mus.pop(0))
+        return schedule_this
+    def __history_show_element__printScheduleEntry(self,schedEntry):
+        for musExTuple in schedEntry:
+            muscle=musExTuple[0]
+            exercises=musExTuple[1]
+            globV.HCI.printStd("%s - %s"%(muscle.name,exercises[0].name))
+            if 1<len(exercises):
+                globV.HCI.printStd(" ",end="")
+                for i in range(1,len(exercises),1):
+                    globV.HCI.printStd("  >& %s"%(exercises[i].name),end="")
+                globV.HCI.printStd("")
+    def __history_show_WorkoutSchedule_element_generic_forward(self,exeList,index,scheduleOrHistoryList):
+        # Gather the due muscles and exercises from their individual 'schedule' lists
+        (scheduled_mus,scheduled_exe)=self.__history_show_element__gatherMuscleExeFromSchedule(scheduleOrHistoryList,exeList,index)
+        # Group and Sort
+        schedule_this=self.__history_show_element__groupSortOrderMuscleExe(scheduled_mus,scheduled_exe,scheduleOrHistoryList,index)
+        # Print it
+        self.__history_show_element__printScheduleEntry(schedule_this)
+        #
+        return
+        #
+        # OLD CODE
+        # leftEnt=len(scheduled_exe)
+        # while 0<leftEnt:
+        #     iexercise=scheduled_exe[0]
+        #     exeForThisMus=[]
+        #     exeForThisMus.append((0,iexercise))
+        #     for j in range(1, len(scheduled_exe)):
+        #         jexercise=scheduled_exe[j]
+        #         if jexercise.schedule[index]==iexercise.schedule[index]:
+        #             exeForThisMus.append((j,jexercise))
+        #     for imuscle in scheduled_mus:
+        #         if iexercise.schedule[index]==imuscle.idx:
+        #             globV.HCI.printStd("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
+        #             if 1<len(exeForThisMus):
+        #                 globV.HCI.printStd(" ",end="")
+        #                 for i in range(1,len(exeForThisMus),1):
+        #                     globV.HCI.printStd("  >& %s"%(exeForThisMus[i][1].name),end="")
+        #                 globV.HCI.printStd("")
+        #     for j in range(len(exeForThisMus)-1,-1,-1):
+        #         scheduled_exe.pop(exeForThisMus[j][0])
+        #         leftEnt-=1
+    def _history_show_computedWorkoutSchedule_element(self,index,dotw="DotW",year="2025",month="MM",day="DD"):
         globV.HCI.printStd("===============")
         #globV.HCI.printStd("== Workout %d"%(i+1))
         if "DotW"==dotw:
             dotw=dotw+f"{index+1}"
         globV.HCI.printStd(f"== {dotw}, {year}-{month}-{day}")
         globV.HCI.printStd("---------------")
-        leftEnt=len(scheduled_exe)
-        while 0<leftEnt:
-            iexercise=scheduled_exe[0]
-            exeForThisMus=[]
-            exeForThisMus.append((0,iexercise))
-            for j in range(1, len(scheduled_exe)):
-                jexercise=scheduled_exe[j]
-                if jexercise.schedule[index]==iexercise.schedule[index]:
-                    exeForThisMus.append((j,jexercise))
-            for imuscle in scheduled_mus:
-                if iexercise.schedule[index]==imuscle.idx:
-                    globV.HCI.printStd("%s - %s"%(imuscle.name,exeForThisMus[0][1].name))
-                    if 1<len(exeForThisMus):
-                        globV.HCI.printStd(" ",end="")
-                        for i in range(1,len(exeForThisMus),1):
-                            globV.HCI.printStd("  >& %s"%(exeForThisMus[i][1].name),end="")
-                        globV.HCI.printStd("")
-            for j in range(len(exeForThisMus)-1,-1,-1):
-                scheduled_exe.pop(exeForThisMus[j][0])
-                leftEnt-=1
+        self.__history_show_WorkoutSchedule_element_generic_forward(self.exercises,index,"schedule")
     def history_show_computedWorkoutSchedule(self,date=None):
         def _set_weekday():
             day=date.weekday()
@@ -525,11 +634,20 @@ class workout(object):
             i-=1
     def muscles_assure_rest(self):
         # (detailed workout spread across days) to make sure that a muscle has 48-72 h of rest
-        #move muscles with no preceeding rest (i.e. was trained last workout) to the end of the list
+        #remove muscles with no preceeding rest (i.e. was trained last workout) from the the working-set
+        #excluding condition though: Don't do this, if the preceding hit at last workout was 'insufficient', i.e. did not train the muscle to required capacity (probably due to bein only partly hit by some compund exercise).
+        #  -> This however, is already included in the calculation of 'rest_period' (cf. '.minimumServing', of class 'muscle')
+        #Still another Special-Condition: Because Supersets should not get out of sync (Sure, we have potentially conflicting requirements "Keep Superset synced", "Hit each muscle sufficiently (muscle 1 of superset)", "Don't overstrain (muscle 2)"). I am trying to define a grayzone in this triangle with:
+        #  IF the muscle to exclude in question IS part of a Superset, and the previous Hit was below 1.0: Keep it (Put to End of List instead of excluding).
+        #  -> That way, this muscle won't be actively picked for the schedule, but in case its Superset-Counterpart is picked, it can be pulled along
         i=len(self.muscle_workingSet)-1
         while i>=0:
             if 0.95<self.muscle_workingSet[i].rest_supposed and 0==self.muscle_workingSet[i].rest_period:
-                self.muscle_workingSet.pop(i)
+                #IF part of superset: Put to end of list, ELSE: remove entirely
+                if self._is_supersetMuscle(self.muscle_workingSet[i]) and 1.0>self.muscle_workingSet[i].rest_prevHitIntense:
+                    self.muscle_workingSet.append(self.muscle_workingSet.pop(i))
+                else:
+                    self.muscle_workingSet.pop(i)
             i-=1
     #------------------------------------------------------------------------------------------
     def _is_supersetMuscle(self,muscle):
@@ -539,6 +657,32 @@ class workout(object):
                 if muscle.idx==self.supersets[i][j]:
                     return (True,i,j)
         return (False,0,0)
+    def _checkAndFind_supersetMuscle(self,muscle,musList):
+        '''Give it a "class muscle" and a list of such.
+            It returns a tuple
+            [Whether Muscle is Superset-Muscle,
+                If-so: Whether Counterpart was found in musList (If muscle is no Superset-Muscle, always 'False'),
+                If-Counterpart-found: Index of it in 'musList'
+            ]
+        '''
+        isSupSet=False
+        partnerFound=False
+        partnerIdx=0
+        checkAgainstIdx=0
+        for superset in self.supersets:
+            if muscle.idx==superset[0]:
+                isSupSet=True
+                checkAgainstIdx=superset[1]
+                break
+            elif muscle.idx==superset[1]:
+                isSupSet=True
+                checkAgainstIdx=superset[0]
+                break
+        for i in range(0,len(musList)):
+            if checkAgainstIdx==musList[i].idx:
+                partnerFound=True
+                partnerIdx=i
+        return (isSupSet,partnerFound,partnerIdx)
     def workoutArrange_optimization_urgencyAdjust(self,picked_pre,indiv_muscle_c):
         #Assure that we are not doing too much or too little. I.e. check where the muscles' credits are laying in relation to the baseline of 2
         #Means, easing training, if even the picked muscles are heavy over 2 or pushing (maybe temporarily) a little harder to keep up if there are many muscles way below 2

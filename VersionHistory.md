@@ -1,9 +1,23 @@
 # DenKr_workoutScheduler -- Version-History
 
 
+## beta-0.5.2
+* Algorithm Enhancement:
+    * It was possible that through an unlucky roll of compound-exercises that a Muscle of a Superset was removed due to insufficient rest before a workout, causing its counterpart to be schedule as incomplete Superset
+    * Improved the Algorithm to make this process smoother. Supersets should no longer be ripped apart.
+* Improved User-Experience:
+    * The Output of a computed Schedule is now more orderly.
+    * Superset-Muscles are always grouped together
+    * Supersets always lead the Output-Group of a workout (Non-Superset-Muscles come afterward)
+       * That does not really mean anything. I.e. it does recommend that you start a workout with Superset-Muscles. It is just, I guess, visually more appealing as it now follows a re-ocurring pattern?
+
+
+
 ## beta-0.5.1
-* One minor adjustment:
+* Three minor adjustments:
     * Increased the len of the "history_shortened" for exercises to account for better variety with big exercise selections
+	* Slight Change in naming of some exercises
+	* Changed the day-of-the-week abbreviation to English (as opposed to German)
 
 
 

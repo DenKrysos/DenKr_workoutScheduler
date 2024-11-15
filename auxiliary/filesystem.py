@@ -60,7 +60,7 @@ def file_json_write(fPath_sub,fName,writeData):
         #f = open(ffull_tmp, mode='w', encoding = 'utf-8')
         f=create_file(fpath,ffull_tmp)
         #File Operations
-        json.dump(writeData,f,sort_keys=False,indent=2)
+        json.dump(writeData,f,sort_keys=False)# ,indent=2
         f.close()
     except:
         globV.HCI.printErr("Writing of history-file %s failed" % ffull_tmp)
